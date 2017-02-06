@@ -1,0 +1,458 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{27E85690-A0FE-42DB-8CC7-D36FC5873A84}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>FfiSpike</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)\FfiSpike\PlistCpp\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)\FfiSpike\PlistCpp\include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)\FfiSpike\PlistCpp\include;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)bin\win32\$(PlatformTarget)</OutDir>
+    <TargetName>devicelib</TargetName>
+    <TargetExt>.exe</TargetExt>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)\FfiSpike\PlistCpp\include;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)bin\win32\$(PlatformTarget)</OutDir>
+    <TargetName>devicelib</TargetName>
+    <TargetExt>.exe</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="FfiSpike.cpp" />
+    <ClCompile Include="FileHelper.cpp" />
+    <ClCompile Include="GDBHelper.cpp" />
+    <ClCompile Include="json.hpp" />
+    <ClCompile Include="mac_impl.cpp" />
+    <ClCompile Include="PlistCpp\Plist.cpp" />
+    <ClCompile Include="PlistCpp\PlistDate.cpp" />
+    <ClCompile Include="PlistCpp\pugixml.cpp" />
+    <ClCompile Include="Printing.cpp" />
+    <ClCompile Include="SocketHelper.cpp" />
+    <ClCompile Include="StringHelper.cpp" />
+    <ClCompile Include="windows_impl.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CommonFunctions.h" />
+    <ClInclude Include="Constants.h" />
+    <ClInclude Include="FileHelper.h" />
+    <ClInclude Include="GDBHelper.h" />
+    <ClInclude Include="PlistCpp\base64.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\any.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\abi\borland_prefix.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\abi\borland_suffix.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\abi\msvc_prefix.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\abi\msvc_suffix.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\abi_prefix.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\abi_suffix.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\auto_link.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\borland.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\clang.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\codegear.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\comeau.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\common_edg.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\compaq_cxx.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\cray.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\digitalmars.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\gcc.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\gcc_xml.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\greenhills.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\hp_acc.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\intel.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\kai.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\metrowerks.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\mpw.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\nvcc.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\pathscale.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\pgi.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\sgi_mipspro.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\sunpro_cc.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\vacpp.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\compiler\visualc.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\no_tr1\cmath.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\no_tr1\complex.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\no_tr1\functional.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\no_tr1\memory.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\no_tr1\utility.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\aix.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\amigaos.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\beos.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\bsd.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\cray.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\cygwin.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\hpux.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\irix.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\linux.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\macos.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\qnxnto.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\solaris.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\symbian.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\vms.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\vxworks.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\platform\win32.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\posix_features.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\requires_threads.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\select_compiler_config.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\select_platform_config.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\select_stdlib_config.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\dinkumware.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\libcomo.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\libcpp.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\libstdcpp3.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\modena.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\msl.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\roguewave.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\sgi.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\stlport.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\stdlib\vacpp.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\suffix.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\user.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\config\warning_disable.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\cstdint.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\current_function.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\detail\workaround.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\exception\detail\attribute_noreturn.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\exception\exception.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\limits.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\locale\definitions.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\locale\encoding_errors.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\locale\encoding_utf.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\locale\utf.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\adl_barrier.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\arity.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\adl.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\arrays.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\ctps.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\dtp.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\eti.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\gcc.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\integral.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\intel.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\lambda.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\msvc.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\nttp.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\overload_resolution.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\preprocessor.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\static_constant.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\ttp.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\config\workaround.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\integral_wrapper.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\lambda_arity_param.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\lambda_support.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\na.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\na_fwd.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\na_spec.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\nttp_decl.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\preprocessor\def_params_tail.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\preprocessor\enum.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\preprocessor\filter_params.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\preprocessor\params.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\preprocessor\sub.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\preprocessor\tuple.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\static_cast.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\template_arity_fwd.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\value_wknd.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\aux_\yes_no.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\bool.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\bool_fwd.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\eval_if.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\identity.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\if.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\int.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\integral_c.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\integral_c_fwd.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\integral_c_tag.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\int_fwd.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\lambda_fwd.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\limits\arity.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\mpl\void_fwd.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\arithmetic\add.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\arithmetic\dec.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\arithmetic\inc.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\arithmetic\sub.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\array\data.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\array\elem.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\array\size.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\cat.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\comma_if.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\config\config.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\control\detail\dmc\while.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\control\detail\edg\while.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\control\detail\msvc\while.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\control\detail\while.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\control\expr_iif.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\control\if.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\control\iif.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\control\while.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\debug\error.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\detail\auto_rec.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\detail\check.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\detail\dmc\auto_rec.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\detail\is_binary.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\empty.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\enum_params.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\facilities\empty.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\facilities\identity.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\facilities\overload.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\identity.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\inc.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iterate.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\lower1.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\lower2.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\lower3.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\lower4.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\lower5.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\upper1.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\upper2.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\upper3.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\upper4.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\bounds\upper5.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\finish.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\forward1.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\forward2.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\forward3.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\forward4.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\forward5.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\reverse1.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\reverse2.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\reverse3.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\reverse4.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\iter\reverse5.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\local.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\rlocal.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\self.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\detail\start.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\iterate.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\local.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\iteration\self.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\adt.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\detail\dmc\fold_left.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\detail\edg\fold_left.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\detail\edg\fold_right.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\detail\fold_left.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\detail\fold_right.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\fold_left.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\fold_right.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\for_each_i.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\list\reverse.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\logical\and.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\logical\bitand.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\logical\bool.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\logical\compl.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\punctuation\comma.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\punctuation\comma_if.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\repeat.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\repetition\detail\dmc\for.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\repetition\detail\edg\for.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\repetition\detail\for.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\repetition\detail\msvc\for.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\repetition\enum_params.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\repetition\for.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\repetition\repeat.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\slot\detail\counter.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\slot\detail\def.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\slot\detail\shared.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\slot\detail\slot1.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\slot\detail\slot2.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\slot\detail\slot3.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\slot\detail\slot4.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\slot\detail\slot5.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\slot\slot.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\tuple\eat.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\tuple\elem.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\tuple\rem.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\tuple\to_list.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\variadic\elem.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\preprocessor\variadic\size.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\static_assert.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\throw_exception.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\add_pointer.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\add_reference.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\broken_compiler_spec.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\config.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\decay.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\bool_trait_def.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\bool_trait_undef.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\cv_traits_impl.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\false_result.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\ice_and.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\ice_eq.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\ice_not.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\ice_or.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\is_function_ptr_helper.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\is_function_ptr_tester.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\template_arity_spec.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\type_trait_def.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\type_trait_undef.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\wrap.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\detail\yes_no_type.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\ice.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\integral_constant.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\is_array.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\is_const.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\is_function.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\is_lvalue_reference.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\is_reference.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\is_rvalue_reference.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\is_same.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\msvc\remove_bounds.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\msvc\remove_reference.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\msvc\typeof.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\remove_bounds.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\type_traits\remove_reference.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\utility\enable_if.hpp" />
+    <ClInclude Include="PlistCpp\include\boost\version.hpp" />
+    <ClInclude Include="PlistCpp\Plist.hpp" />
+    <ClInclude Include="PlistCpp\PlistDate.hpp" />
+    <ClInclude Include="PlistCpp\pugiconfig.hpp" />
+    <ClInclude Include="PlistCpp\pugixml.hpp" />
+    <ClInclude Include="Printing.h" />
+    <ClInclude Include="SocketHelper.h" />
+    <ClInclude Include="StringHelper.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
