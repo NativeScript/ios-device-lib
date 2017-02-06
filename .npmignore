@@ -1,0 +1,8 @@
+IOSDeviceLib/*
+IOSDeviceLib.xcodeproj/*
+x64/*
+x86/*
+**/*.sln
+**/*.VC.db
+.vscode/*
+.vs/*
