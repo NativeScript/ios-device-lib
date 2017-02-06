@@ -2,6 +2,6 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "self:DeviceLib.xcodeproj">
+      location = "self:/Users/blackdragon/Work/ios-device-lib/IOSDeviceLib.xcodeproj">
    </FileRef>
 </Workspace>
