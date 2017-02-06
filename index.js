@@ -38,7 +38,7 @@ const DataEventName = "data";
 class IOSDeviceLib extends EventEmitter {
 	constructor(onDeviceFound, onDeviceLost) {
 		super();
-		this._chProc = spawn(path.join(__dirname, "bin", os.platform(), os.arch(), "devicelib"));
+		this._chProc = spawn(path.join(__dirname, "bin", os.platform(), os.arch(), "iosdevicelib"));
 		this._chProc.stdout.on(DataEventName, (data) => {
 			const parsedMessage = this._read(data);
 			switch (parsedMessage.event) {
