@@ -13,7 +13,7 @@
 		702495711E4080B8009A6EBF /* StringHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7024956C1E4080B8009A6EBF /* StringHelper.cpp */; };
 		7038C8991DEED5F500A3D335 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7038C8981DEED5F500A3D335 /* CoreFoundation.framework */; };
 		7038C89B1DEED6C300A3D335 /* MobileDevice.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7038C89A1DEED6C300A3D335 /* MobileDevice.framework */; };
-		7038CB3C1DEEDB4C00A3D335 /* FfiSpike.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7038C9F01DEEDB4C00A3D335 /* FfiSpike.cpp */; };
+		7038CB3C1DEEDB4C00A3D335 /* IOSDeviceLib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7038C9F01DEEDB4C00A3D335 /* IOSDeviceLib.cpp */; };
 		7038CB3D1DEEDB4C00A3D335 /* Plist.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7038CB351DEEDB4C00A3D335 /* Plist.cpp */; };
 		7038CB3E1DEEDB4C00A3D335 /* PlistDate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7038CB371DEEDB4C00A3D335 /* PlistDate.cpp */; };
 		7038CB3F1DEEDB4C00A3D335 /* pugixml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7038CB3A1DEEDB4C00A3D335 /* pugixml.cpp */; };
@@ -45,9 +45,9 @@
 		7024956D1E4080B8009A6EBF /* StringHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StringHelper.h; sourceTree = "<group>"; };
 		7038C8981DEED5F500A3D335 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		7038C89A1DEED6C300A3D335 /* MobileDevice.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileDevice.framework; path = ../../../../System/Library/PrivateFrameworks/MobileDevice.framework; sourceTree = "<group>"; };
-		7038C9F01DEEDB4C00A3D335 /* FfiSpike.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FfiSpike.cpp; sourceTree = "<group>"; };
-		7038C9F11DEEDB4C00A3D335 /* FfiSpike.vcxproj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = FfiSpike.vcxproj; sourceTree = "<group>"; };
-		7038C9F21DEEDB4C00A3D335 /* FfiSpike.vcxproj.filters */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = FfiSpike.vcxproj.filters; sourceTree = "<group>"; };
+		7038C9F01DEEDB4C00A3D335 /* IOSDeviceLib.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IOSDeviceLib.cpp; sourceTree = "<group>"; };
+		7038C9F11DEEDB4C00A3D335 /* IOSDeviceLib.vcxproj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = IOSDeviceLib.vcxproj; sourceTree = "<group>"; };
+		7038C9F21DEEDB4C00A3D335 /* IOSDeviceLib.vcxproj.filters */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = IOSDeviceLib.vcxproj.filters; sourceTree = "<group>"; };
 		7038C9F31DEEDB4C00A3D335 /* json.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = json.hpp; sourceTree = "<group>"; };
 		7038C9F51DEEDB4C00A3D335 /* base64.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = base64.hpp; sourceTree = "<group>"; };
 		7038C9F81DEEDB4C00A3D335 /* any.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = any.hpp; sourceTree = "<group>"; };
@@ -330,8 +330,8 @@
 		709A6CCE1E435D11006F76C7 /* Printing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Printing.cpp; sourceTree = "<group>"; };
 		709A6CCF1E435D11006F76C7 /* Printing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Printing.h; sourceTree = "<group>"; };
 		709A6CD01E435D11006F76C7 /* windows_impl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = windows_impl.cpp; sourceTree = "<group>"; };
-		70F5F4281E13EE02005196BF /* configuration.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = configuration.xcconfig; path = FfiSpike/configuration.xcconfig; sourceTree = "<group>"; };
-		70F6ADAB1DEEB71300DD4722 /* devicelib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = devicelib; sourceTree = BUILT_PRODUCTS_DIR; };
+		70F5F4281E13EE02005196BF /* configuration.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = configuration.xcconfig; path = IOSDeviceLib/configuration.xcconfig; sourceTree = "<group>"; };
+		70F6ADAB1DEEB71300DD4722 /* ios-device-lib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "ios-device-lib"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -347,7 +347,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		7038C9EF1DEEDB4C00A3D335 /* FfiSpike */ = {
+		7038C9EF1DEEDB4C00A3D335 /* IOSDeviceLib */ = {
 			isa = PBXGroup;
 			children = (
 				709A6CCB1E435D11006F76C7 /* CommonFunctions.h */,
@@ -364,14 +364,14 @@
 				7024956B1E4080B8009A6EBF /* SocketHelper.h */,
 				7024956C1E4080B8009A6EBF /* StringHelper.cpp */,
 				7024956D1E4080B8009A6EBF /* StringHelper.h */,
-				7038C9F01DEEDB4C00A3D335 /* FfiSpike.cpp */,
-				7038C9F11DEEDB4C00A3D335 /* FfiSpike.vcxproj */,
-				7038C9F21DEEDB4C00A3D335 /* FfiSpike.vcxproj.filters */,
+				7038C9F01DEEDB4C00A3D335 /* IOSDeviceLib.cpp */,
+				7038C9F11DEEDB4C00A3D335 /* IOSDeviceLib.vcxproj */,
+				7038C9F21DEEDB4C00A3D335 /* IOSDeviceLib.vcxproj.filters */,
 				7038C9F31DEEDB4C00A3D335 /* json.hpp */,
 				7038C9F41DEEDB4C00A3D335 /* PlistCpp */,
 				7038CB401DEEF31400A3D335 /* Declarations.h */,
 			);
-			path = FfiSpike;
+			path = IOSDeviceLib;
 			sourceTree = "<group>";
 		};
 		7038C9F41DEEDB4C00A3D335 /* PlistCpp */ = {
@@ -1083,7 +1083,7 @@
 			isa = PBXGroup;
 			children = (
 				70F5F4281E13EE02005196BF /* configuration.xcconfig */,
-				7038C9EF1DEEDB4C00A3D335 /* FfiSpike */,
+				7038C9EF1DEEDB4C00A3D335 /* IOSDeviceLib */,
 				7038C89A1DEED6C300A3D335 /* MobileDevice.framework */,
 				7038C8981DEED5F500A3D335 /* CoreFoundation.framework */,
 				70F6ADAC1DEEB71300DD4722 /* Products */,
@@ -1093,7 +1093,7 @@
 		70F6ADAC1DEEB71300DD4722 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				70F6ADAB1DEEB71300DD4722 /* devicelib */,
+				70F6ADAB1DEEB71300DD4722 /* ios-device-lib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1101,9 +1101,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		70F6ADAA1DEEB71300DD4722 /* DeviceLib */ = {
+		70F6ADAA1DEEB71300DD4722 /* IOSDeviceLib */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 70F6ADB21DEEB71300DD4722 /* Build configuration list for PBXNativeTarget "DeviceLib" */;
+			buildConfigurationList = 70F6ADB21DEEB71300DD4722 /* Build configuration list for PBXNativeTarget "IOSDeviceLib" */;
 			buildPhases = (
 				70F6ADA71DEEB71300DD4722 /* Sources */,
 				70F6ADA81DEEB71300DD4722 /* Frameworks */,
@@ -1113,9 +1113,9 @@
 			);
 			dependencies = (
 			);
-			name = DeviceLib;
+			name = IOSDeviceLib;
 			productName = DeviceLib;
-			productReference = 70F6ADAB1DEEB71300DD4722 /* devicelib */;
+			productReference = 70F6ADAB1DEEB71300DD4722 /* ios-device-lib */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -1132,7 +1132,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 70F6ADA61DEEB71300DD4722 /* Build configuration list for PBXProject "DeviceLib" */;
+			buildConfigurationList = 70F6ADA61DEEB71300DD4722 /* Build configuration list for PBXProject "IOSDeviceLib" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -1144,7 +1144,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				70F6ADAA1DEEB71300DD4722 /* DeviceLib */,
+				70F6ADAA1DEEB71300DD4722 /* IOSDeviceLib */,
 			);
 		};
 /* End PBXProject section */
@@ -1162,7 +1162,7 @@
 				709A6CD21E435D11006F76C7 /* Printing.cpp in Sources */,
 				7024956F1E4080B8009A6EBF /* GDBHelper.cpp in Sources */,
 				7038CB3F1DEEDB4C00A3D335 /* pugixml.cpp in Sources */,
-				7038CB3C1DEEDB4C00A3D335 /* FfiSpike.cpp in Sources */,
+				7038CB3C1DEEDB4C00A3D335 /* IOSDeviceLib.cpp in Sources */,
 				702495701E4080B8009A6EBF /* SocketHelper.cpp in Sources */,
 				709A6CD11E435D11006F76C7 /* mac_impl.cpp in Sources */,
 			);
@@ -1258,8 +1258,8 @@
 					"$(inherited)",
 					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
 				);
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/FfiSpike/PlistCpp/include/**";
-				PRODUCT_NAME = devicelib;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/IOSDeviceLib/PlistCpp/include/**";
+				PRODUCT_NAME = "ios-device-lib";
 				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Debug;
@@ -1272,8 +1272,8 @@
 					"$(inherited)",
 					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
 				);
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/FfiSpike/PlistCpp/include/**";
-				PRODUCT_NAME = devicelib;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/IOSDeviceLib/PlistCpp/include/**";
+				PRODUCT_NAME = "ios-device-lib";
 				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Release;
@@ -1281,7 +1281,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		70F6ADA61DEEB71300DD4722 /* Build configuration list for PBXProject "DeviceLib" */ = {
+		70F6ADA61DEEB71300DD4722 /* Build configuration list for PBXProject "IOSDeviceLib" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				70F6ADB01DEEB71300DD4722 /* Debug */,
@@ -1290,7 +1290,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		70F6ADB21DEEB71300DD4722 /* Build configuration list for PBXNativeTarget "DeviceLib" */ = {
+		70F6ADB21DEEB71300DD4722 /* Build configuration list for PBXNativeTarget "IOSDeviceLib" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				70F6ADB31DEEB71300DD4722 /* Debug */,

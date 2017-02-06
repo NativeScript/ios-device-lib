@@ -21,8 +21,9 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{27E85690-A0FE-42DB-8CC7-D36FC5873A84}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>FfiSpike</RootNamespace>
+    <RootNamespace>IOSDeviceLib</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <ProjectName>IOSDeviceLib</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -71,24 +72,24 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)\FfiSpike\PlistCpp\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\IOSDeviceLib\PlistCpp\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)\FfiSpike\PlistCpp\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\IOSDeviceLib\PlistCpp\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\FfiSpike\PlistCpp\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\IOSDeviceLib\PlistCpp\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)bin\win32\$(PlatformTarget)</OutDir>
-    <TargetName>devicelib</TargetName>
+    <TargetName>ios-device-lib</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\FfiSpike\PlistCpp\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\IOSDeviceLib\PlistCpp\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)bin\win32\$(PlatformTarget)</OutDir>
-    <TargetName>devicelib</TargetName>
+    <TargetName>ios-device-lib</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -160,7 +161,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="FfiSpike.cpp" />
+    <ClCompile Include="IOSDeviceLib.cpp" />
     <ClCompile Include="FileHelper.cpp" />
     <ClCompile Include="GDBHelper.cpp" />
     <ClCompile Include="json.hpp" />
