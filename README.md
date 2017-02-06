@@ -1,4 +1,4 @@
-device-lib
+ios-device-lib
 ==============
 
 JavaScript library, designed to facilitate communication with iOS devices. The library’s interface is Promise-based.
