@@ -13,7 +13,7 @@ const HeaderSize = 4;
 class IOSDeviceLibStdioHandler extends EventEmitter {
 	constructor() {
 		super();
-		this._unfinishedMessage = new Buffer(0);
+		this._unfinishedMessage = Buffer.alloc(0);
 	}
 
 	startReadingData() {
@@ -57,12 +57,13 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 			// Get the message length header.
 			const messageSizeBuffer = data.slice(0, HeaderSize);
 			const messageLength = bufferpack.unpack(">i", messageSizeBuffer)[0];
+			const dataLengthWithoutHeader = data.length - HeaderSize;
 
-			if (messageLength > data.length - HeaderSize) {
+			if (messageLength > dataLengthWithoutHeader) {
 				// Less than one message in the buffer.
 				// Store the unfinished message untill the next call of the function.
 				this._unfinishedMessage = data;
-			} else if (data.length - 4 > messageLength) {
+			} else if (dataLengthWithoutHeader > messageLength) {
 				// More than one message in the buffer.
 				const messageBuffer = this._getMessageFromBuffer(data, messageLength);
 
@@ -82,7 +83,7 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 			const concatenatedMessage = Buffer.concat([this._unfinishedMessage, data]);
 
 			// Clear the unfinished message buffer.
-			this._unfinishedMessage = new Buffer(0);
+			this._unfinishedMessage = Buffer.alloc(0);
 			this._unpackMessages(concatenatedMessage);
 		} else {
 			// While debugging the data here contains one character - \0, null or 0.
