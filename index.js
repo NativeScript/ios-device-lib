@@ -1,19 +1,11 @@
 "use strict";
 
-const bufferpack = require("bufferpack");
 const uuid = require('node-uuid');
-const spawn = require("child_process").spawn;
-const path = require("path");
-const fs = require("fs");
-const os = require("os");
 const EventEmitter = require("events");
 
-const DeviceEventEnum = {
-	kDeviceFound: "deviceFound",
-	kDeviceLost: "deviceLost",
-	kDeviceTrusted: "deviceTrusted",
-	kDeviceUnknown: "deviceUnknown"
-};
+const Constants = require("./constants");
+
+const IOSDeviceLibStdioHandler = require("./ios-device-lib-stdio-handler").IOSDeviceLibStdioHandler;
 
 const MethodNames = {
 	install: "install",
@@ -33,27 +25,14 @@ const MethodNames = {
 const Events = {
 	deviceLogData: "deviceLogData"
 };
-const DataEventName = "data";
 
 class IOSDeviceLib extends EventEmitter {
 	constructor(onDeviceFound, onDeviceLost) {
 		super();
-		this._chProc = spawn(path.join(__dirname, "bin", os.platform(), os.arch(), "ios-device-lib"));
-		this._chProc.stdout.on(DataEventName, (data) => {
-			const parsedMessage = this._read(data);
-			switch (parsedMessage.event) {
-				case DeviceEventEnum.kDeviceFound:
-					onDeviceFound(parsedMessage);
-					break;
-				case DeviceEventEnum.kDeviceLost:
-					onDeviceLost(parsedMessage);
-					break;
-				case DeviceEventEnum.kDeviceTrusted:
-					onDeviceLost(parsedMessage);
-					onDeviceFound(parsedMessage);
-					break;
-			}
-		});
+		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler();
+		this._iosDeviceLibStdioHandler.startReadingData();
+		this._iosDeviceLibStdioHandler.on(Constants.DeviceFoundEventName, onDeviceFound);
+		this._iosDeviceLibStdioHandler.on(Constants.DeviceLostEventName, onDeviceLost);
 	}
 
 	install(ipaPath, deviceIdentifiers) {
@@ -105,8 +84,8 @@ class IOSDeviceLib extends EventEmitter {
 	}
 
 	dispose(signal) {
-		this._chProc.removeAllListeners();
-		this._chProc.kill(signal);
+		this.removeAllListeners();
+		this._iosDeviceLibStdioHandler.dispose(signal);
 	}
 
 	_getPromise(methodName, args, options) {
@@ -116,21 +95,20 @@ class IOSDeviceLib extends EventEmitter {
 			}
 
 			const id = uuid.v4();
-			const eventHandler = (data) => {
-				let response = this._read(data, id);
-				if (response) {
-					delete response.id;
+			const eventHandler = (message) => {
+				if (message) {
+					delete message.id;
 					if (options && options.shouldEmit) {
-						this.emit(Events.deviceLogData, response);
+						this.emit(Events.deviceLogData, message);
 					} else {
-						response.error ? reject(response.error) : resolve(response);
-						this._chProc.stdout.removeListener(DataEventName, eventHandler);
+						message.error ? reject(message.error) : resolve(message);
+						this._iosDeviceLibStdioHandler.removeListener(Constants.DataEventName, eventHandler);
 					}
 				}
 			};
 
-			this._chProc.stdout.on(DataEventName, eventHandler);
-			this._chProc.stdin.write(this._getMessage(id, methodName, args));
+			this._iosDeviceLibStdioHandler.on(Constants.DataEventName, eventHandler);
+			this._iosDeviceLibStdioHandler.writeData(this._getMessage(id, methodName, args));
 		});
 	}
 
