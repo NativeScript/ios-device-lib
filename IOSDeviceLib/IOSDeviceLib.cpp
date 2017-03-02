@@ -1044,8 +1044,8 @@ void device_log(std::string device_identifier, std::string method_id)
 
 void post_notification(std::string device_identifier, PostNotificationInfo post_notification_info, std::string method_id)
 {
-	HANDLE socket = start_service(device_identifier, kNotificationProxy, method_id);
-	if (!socket)
+	HANDLE handle = start_service(device_identifier, kNotificationProxy, method_id);
+	if (!handle)
 	{
 		return;
 	}
@@ -1069,8 +1069,9 @@ void post_notification(std::string device_identifier, PostNotificationInfo post_
 							"<string></string>"
 						"</dict>"
 						"</plist>";
-
-	send_message(xml_command.str().c_str(), (SOCKET)socket);
+	
+	SOCKET socket = (SOCKET)handle;
+	send_message(xml_command.str().c_str(), socket);
 	print(json({ { kResponse, socket }, { kId, method_id }, { kDeviceId, device_identifier } }));
 }
 
@@ -1380,11 +1381,11 @@ int main()
 					std::thread([=]() { post_notification(device_identifier, post_notification_info, method_id); }).detach();
 				}
 			}
-			else if (method_name == "awaitNotificatioNResponse")
+			else if (method_name == "awaitNotificationResponse")
 			{
 				for (json &arg : method_args)
 				{
-					if (!validate_device_id_and_attrs(arg, method_id, { kResponseCommandType, kSocket, kResponsePropertyName }))
+					if (!validate_device_id_and_attrs(arg, method_id, { kResponseCommandType, kResponsePropertyName }))
 						continue;
 
 					std::string device_identifier = arg.value(kDeviceId, "");

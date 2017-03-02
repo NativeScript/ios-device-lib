@@ -23,7 +23,7 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 		});
 
 		this._chProc.stderr.on("data", (data) => {
-			console.log("TRACE: ", data);
+			console.log("TRACE: ", data && data.toString());
 		});
 	}
 
@@ -43,10 +43,10 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 				case Constants.DeviceEventEnum.kDeviceFound:
 					this.emit(Constants.DeviceFoundEventName, message);
 					break;
-				case DeviceEventEnum.kDeviceLost:
+				case Constants.DeviceEventEnum.kDeviceLost:
 					this.emit(Constants.DeviceLostEventName, message);
 					break;
-				case DeviceEventEnum.kDeviceTrusted:
+				case Constants.DeviceEventEnum.kDeviceTrusted:
 					this.emit(Constants.DeviceLostEventName, message);
 					this.emit(Constants.DeviceFoundEventName, message);
 					break;

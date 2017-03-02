@@ -21,7 +21,8 @@ const MethodNames = {
 	start: "start",
 	stop: "stop",
 	apps: "apps",
-	connectToPort: "connectToPort"
+	connectToPort: "connectToPort",
+	sendMessageToSocket: "sendMessageToSocket"
 };
 
 const Events = {
@@ -91,6 +92,10 @@ class IOSDeviceLib extends EventEmitter {
 
 	connectToPort(connectToPortArray) {
 		return connectToPortArray.map(connectToPortObject => this._getPromise(MethodNames.connectToPort, [connectToPortObject]));
+	}
+
+	sendMessageToSocket(sendMessageToSocketArray) {
+		return sendMessageToSocketArray.map(sendMessageToSocketObject => this._getPromise(MethodNames.sendMessageToSocket, [sendMessageToSocketObject]));
 	}
 
 	dispose(signal) {
