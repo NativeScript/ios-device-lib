@@ -7,6 +7,8 @@
 #include <string>
 #include "Constants.h"
 
+void trace(const char* str);
+void trace(int num);
 void print(const char* str);
 void print(const nlohmann::json& message);
 void print_error(const char *message, std::string device_identifier, std::string method_id, int code =

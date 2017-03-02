@@ -21,6 +21,10 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 		this._chProc.stdout.on("data", (data) => {
 			this._unpackMessages(data);
 		});
+
+		this._chProc.stderr.on("data", (data) => {
+			console.log("TRACE: ", data);
+		});
 	}
 
 	writeData(data) {
