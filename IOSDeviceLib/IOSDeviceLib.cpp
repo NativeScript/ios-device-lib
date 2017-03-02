@@ -1210,7 +1210,7 @@ void start_app(std::string device_identifier, std::string application_identifier
 	}
 }
 
-void connect_to_port(std::string& device_identifier, int port, std::string& method_id)
+void connect_to_port(std::string device_identifier, int port, std::string method_id)
 {
 #ifdef _WIN32
 	print_error("This functionality works only on OSX.", device_identifier, method_id);
@@ -1238,6 +1238,13 @@ void connect_to_port(std::string& device_identifier, int port, std::string& meth
 		print(json({ { kResponse, socket },{ kId, method_id },{ kDeviceId, device_identifier } }));
 	}
 #endif // _WIN32
+}
+
+void send_message_to_socket(std::string device_identifier, SOCKET socket, std::string message, std::string method_id)
+{
+	int bytes_sent = send_message(message, socket);
+
+	print(json({ { kResponse, bytes_sent }, { kId, method_id }, { kDeviceId, device_identifier } }));
 }
 
 int main()
@@ -1383,8 +1390,8 @@ int main()
 					std::string device_identifier = arg.value(kDeviceId, "");
 					std::string response_command_type = arg.value(kResponseCommandType, "");
 					std::string response_key_name = arg.value(kResponsePropertyName, "");
-					SOCKET socket = arg.value(kSocket, 0);
-					int timeout = arg.value(kTimeout, 0);
+					SOCKET socket = arg.value(kSocket, -1);
+					int timeout = arg.value(kTimeout, -1);
 
 					AwaitNotificationResponseInfo await_notification_response_info({ response_command_type, response_key_name, socket, timeout });
 					std::thread([=]() { await_notification_response(device_identifier, await_notification_response_info, method_id); }).detach();
@@ -1425,7 +1432,17 @@ int main()
 
 					std::string device_identifier = arg.value(kDeviceId, "");
 					int port = arg.value(kPort, -1);
-					connect_to_port(device_identifier, port, method_id);
+					std::thread([=]() { connect_to_port(device_identifier, port, method_id); }).detach();
+				}
+			}
+			else if (method_name == "sendMessageToSocket")
+			{
+				for (json &arg : method_args)
+				{
+					SOCKET socket = arg.value(kSocket, -1);
+					std::string device_identifier = arg.value(kDeviceId, "");
+					std::string message = arg.value(kMessage, "");
+					std::thread([=]() { send_message_to_socket(device_identifier, socket, message, method_id); }).detach();
 				}
 			}
 			else if (method_name == "exit")

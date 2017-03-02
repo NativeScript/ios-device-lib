@@ -69,7 +69,7 @@ class IOSDeviceLib extends EventEmitter {
 		return postNotificationArray.map(notificationObject => this._getPromise(MethodNames.postNotification, [notificationObject]));
 	}
 
-	awaitNotificationRasponse(awaitNotificationResponseArray) {
+	awaitNotificationResponse(awaitNotificationResponseArray) {
 		return awaitNotificationResponseArray.map(awaitNotificationObject => this._getPromise(MethodNames.awaitNotificationResponse, [awaitNotificationObject]));
 	}
 

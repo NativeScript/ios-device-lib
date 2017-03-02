@@ -53,10 +53,6 @@ declare module IOSDeviceLib {
 	interface IPostNotificationData extends IDeviceId {
 		commandType: string;
 		notificationName: string;
-		shouldWaitForResponse: boolean;
-		timeout?: number;
-		responseCommandType?: string;
-		responsePropertyName?: string;
 	}
 
 	interface IAwaitNotificatioNResponseData extends IDeviceId {
@@ -105,6 +101,11 @@ declare module IOSDeviceLib {
 		port: number;
 	}
 
+	interface ISendMessageToSocketData extends IDeviceId {
+		socket: number;
+		message: string;
+	}
+
 	interface IOSDeviceLib extends NodeJS.EventEmitter {
 		new (onDeviceFound: (found: IDeviceActionInfo) => void, onDeviceLost: (found: IDeviceActionInfo) => void): IOSDeviceLib;
 		install(ipaPath: string, deviceIdentifiers: string[]): Promise<IDeviceResponse>[];
@@ -121,6 +122,7 @@ declare module IOSDeviceLib {
 		stop(stopArray: IDdiApplicationData[]): Promise<IDeviceResponse>[];
 		startDeviceLog(deviceIdentifiers: string[]): void;
 		connectToPort(connectToPortArray: IConnectToPortData[]): Promise<IDeviceResponse>[];
+		sendMessageToSocket(sendMessageToSocketArray: ISendMessageToSocketData[]): Promise<IDeviceResponse>[];
 		dispose(signal?: string): void;
 		on(event: "deviceLogData", listener: (response: IDeviceLogData) => void): this;
 	}
