@@ -1,7 +1,7 @@
 #pragma once
 
 #pragma region Macros
-#define RETURN_IF_FAILED_RESULT(expr) ; if((__result = (expr))) { return __result; }
+#define UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(expr, mutex) ; if((__result = (expr))) { mutex.unlock(); return __result; }
 #define PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(expr, error_msg, device_identifier, method_id, value) ; if((__result = (expr))) { print_error(error_msg, device_identifier, method_id, __result); return value; }
 #define PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(expr, error_msg, device_identifier, method_id) ; if((__result = (expr))) { print_error(error_msg, device_identifier, method_id, __result); return; }
 #pragma endregion Macros

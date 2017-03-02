@@ -6,6 +6,7 @@
 #include <memory>
 #include <thread>
 #include <algorithm>
+#include <mutex>
 #include <sys/stat.h>
 
 #include "json.hpp"
@@ -121,33 +122,40 @@ CFStringRef create_CFString(const char* str)
 	return CFStringCreateWithCString(NULL, str, kCFStringEncodingUTF8);
 }
 
+std::mutex start_session_mutex;
 int start_session(std::string& device_identifier)
 {
+	start_session_mutex.lock();
 	if (devices[device_identifier].sessions < 1)
 	{
 		const DeviceInfo* device_info = devices[device_identifier].device_info;
-		RETURN_IF_FAILED_RESULT(AMDeviceConnect(device_info));
+		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceConnect(device_info), start_session_mutex);
 		if (!AMDeviceIsPaired(device_info))
 		{
-			RETURN_IF_FAILED_RESULT(AMDevicePair(device_info));
+			UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDevicePair(device_info), start_session_mutex);
 		}
 
-		RETURN_IF_FAILED_RESULT(AMDeviceValidatePairing(device_info));
-		RETURN_IF_FAILED_RESULT(AMDeviceStartSession(device_info));
+		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceValidatePairing(device_info), start_session_mutex);
+		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceStartSession(device_info), start_session_mutex);
 	}
 
 	++devices[device_identifier].sessions;
+	start_session_mutex.unlock();
 	return 0;
 }
 
+std::mutex stop_session_mutex;
 void stop_session(std::string& device_identifier)
 {
+	stop_session_mutex.lock();
 	if (--devices[device_identifier].sessions < 1)
 	{
 		const DeviceInfo *device_info = devices[device_identifier].device_info;
 		AMDeviceStopSession(device_info);
 		AMDeviceDisconnect(device_info);
 	}
+
+	stop_session_mutex.unlock();
 }
 
 std::string get_device_property_value(std::string& device_identifier, const char* property_name)
@@ -345,17 +353,22 @@ void start_run_loop()
 	CFRunLoopRun();
 }
 
+std::mutex start_service_mutex;
 HANDLE start_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error)
 {
+	start_service_mutex.lock();
 	if (!devices.count(device_identifier))
 	{
 		if (should_log_error)
 			print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
+		
+		start_service_mutex.unlock();
 		return NULL;
 	}
 
 	if (devices[device_identifier].services.count(service_name))
 	{
+		start_service_mutex.unlock();
 		return devices[device_identifier].services[service_name];
 	}
 
@@ -371,13 +384,21 @@ HANDLE start_service(std::string device_identifier, const char* service_name, st
 		message += service_name;
 		if (should_log_error)
 			print_error(message.c_str(), device_identifier, method_id, result);
+			
+		start_service_mutex.unlock();
 		return NULL;
 	}
+
 	devices[device_identifier].services[service_name] = socket;
 
+	start_service_mutex.unlock();
 	return socket;
 }
 
+// We do not use this method.
+// When we used it to upload files to the live ION we had problems writing them on the root of the ION.
+// The method is not deleted because it works for some applications and we can use it in the future for something.
+#if 0
 HANDLE start_house_arrest(std::string device_identifier, const char* application_identifier, std::string method_id)
 {
 	if (!devices.count(device_identifier))
@@ -409,6 +430,7 @@ HANDLE start_house_arrest(std::string device_identifier, const char* application
 	devices[device_identifier].services[kHouseArrest] = houseFd;
 	return houseFd;
 }
+#endif
 
 HANDLE start_debug_server(std::string device_identifier, std::string ddi, std::string method_id)
 {
@@ -1226,7 +1248,10 @@ int main()
 #ifdef _WIN32
 	_setmode(_fileno(stdout), _O_BINARY);
 
-	RETURN_IF_FAILED_RESULT(load_dlls());
+	if (!load_dlls())
+	{
+		return -1;
+	}
 #endif
 
 	std::thread([]() { start_run_loop(); }).detach();
