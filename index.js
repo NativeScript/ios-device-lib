@@ -96,7 +96,7 @@ class IOSDeviceLib extends EventEmitter {
 
 			const id = uuid.v4();
 			const eventHandler = (message) => {
-				if (message) {
+				if (message && message.id === id) {
 					delete message.id;
 					if (options && options.shouldEmit) {
 						this.emit(Events.deviceLogData, message);
@@ -114,28 +114,6 @@ class IOSDeviceLib extends EventEmitter {
 
 	_getMessage(id, name, args) {
 		return JSON.stringify({ methods: [{ id: id, name: name, args: args }] }) + '\n';
-	}
-
-	_read(data, id) {
-		if (data.length) {
-			const messageSizeBuffer = data.slice(0, 4);
-			const bufferLength = bufferpack.unpack(">i", messageSizeBuffer)[0];
-			const message = data.slice(messageSizeBuffer.length, bufferLength + messageSizeBuffer.length);
-			let parsedMessage = {};
-
-			try {
-				parsedMessage = JSON.parse(message.toString());
-			} catch (ex) {
-				console.log("An ERROR OCCURRED");
-				// What to do here?
-			}
-
-			if (!id || id === parsedMessage.id) {
-				return parsedMessage;
-			} else {
-				return this._read(data.slice(bufferLength + messageSizeBuffer.length), id);
-			}
-		}
 	}
 }
 
