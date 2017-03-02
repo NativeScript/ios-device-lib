@@ -16,7 +16,8 @@ const MethodNames = {
 	download: "download",
 	read: "read",
 	delete: "delete",
-	notify: "notify",
+	postNotification: "postNotification",
+	awaitNotificationResponse: "awaitNotificationResponse",
 	start: "start",
 	stop: "stop",
 	apps: "apps",
@@ -64,8 +65,12 @@ class IOSDeviceLib extends EventEmitter {
 		return deleteArray.map(deleteObject => this._getPromise(MethodNames.delete, [deleteObject]));
 	}
 
-	notify(notifyArray) {
-		return notifyArray.map(notificationObject => this._getPromise(MethodNames.notify, [notificationObject]));
+	postNotification(postNotificationArray) {
+		return postNotificationArray.map(notificationObject => this._getPromise(MethodNames.postNotification, [notificationObject]));
+	}
+
+	awaitNotificationRasponse(awaitNotificationResponseArray) {
+		return awaitNotificationResponseArray.map(awaitNotificationObject => this._getPromise(MethodNames.awaitNotificationResponse, [awaitNotificationObject]));
 	}
 
 	apps(deviceIdentifiers) {

@@ -32,7 +32,7 @@ declare module IOSDeviceLib {
 		path: string;
 	}
 
-	interface IFileData extends ISource, IDestination{
+	interface IFileData extends ISource, IDestination {
 	}
 
 	interface IFileOperationData extends IAppDevice, IFileData {
@@ -50,13 +50,20 @@ declare module IOSDeviceLib {
 		ddi: string;
 	}
 
-	interface INotifyData extends IDeviceId {
+	interface IPostNotificationData extends IDeviceId {
 		commandType: string;
 		notificationName: string;
 		shouldWaitForResponse: boolean;
 		timeout?: number;
 		responseCommandType?: string;
 		responsePropertyName?: string;
+	}
+
+	interface IAwaitNotificatioNResponseData extends IDeviceId {
+		responseCommandType: string;
+		responsePropertyName: string;
+		socket: number;
+		timeout: number;
 	}
 
 	interface IDeviceResponse extends IDeviceId {
@@ -107,7 +114,8 @@ declare module IOSDeviceLib {
 		download(downloadArray: IFileOperationData[]): Promise<IDeviceResponse>[];
 		read(readArray: IReadOperationData[]): Promise<IDeviceResponse>[];
 		delete(deleteArray: IDeleteFileData[]): Promise<IDeviceResponse>[];
-		notify(notifyArray: INotifyData[]): Promise<IDeviceResponse>[];
+		postNotification(postNotificationArray: IPostNotificationData[]): Promise<IDeviceResponse>[];
+		awaitNotificationResponse(awaitNotificationResponseArray: IAwaitNotificatioNResponseData[]): Promise<IDeviceResponse>[];
 		apps(deviceIdentifiers: string[]): Promise<IDeviceAppInfo>[];
 		start(startArray: IDdiApplicationData[]): Promise<IDeviceResponse>[];
 		stop(stopArray: IDdiApplicationData[]): Promise<IDeviceResponse>[];

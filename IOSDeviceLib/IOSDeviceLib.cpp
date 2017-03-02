@@ -1071,29 +1071,26 @@ void post_notification(std::string device_identifier, PostNotificationInfo post_
 						"</plist>";
 
 	send_message(xml_command.str().c_str(), (SOCKET)socket);
-	std::string response_message("");
-	if (post_notification_info.should_wait_for_response)
+	print(json({ { kResponse, socket }, { kId, method_id }, { kDeviceId, device_identifier } }));
+}
+
+void await_notification_response(std::string device_identifier, AwaitNotificationResponseInfo await_notification_response_info, std::string method_id)
+{
+	std::map<std::string, boost::any> response = receive_message(await_notification_response_info.socket, await_notification_response_info.timeout);
+	if (response.size())
 	{
-			std::map<std::string, boost::any> response = receive_message((SOCKET)socket, post_notification_info.timeout);
-			if (response.size())
-			{
-				PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response.count(kErrorKey), boost::any_cast<std::string>(response[kErrorKey]).c_str(), device_identifier, method_id);
+		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response.count(kErrorKey), boost::any_cast<std::string>(response[kErrorKey]).c_str(), device_identifier, method_id);
 
-				std::string response_command_type = boost::any_cast<std::string>(response[kCommandKey]);
-				std::string invalid_response_type_error_message = "Invalid notification response command type: " + response_command_type;
-				PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response_command_type != post_notification_info.response_command_type, invalid_response_type_error_message.c_str(), device_identifier, method_id);
+		std::string response_command_type = boost::any_cast<std::string>(response[kCommandKey]);
+		std::string invalid_response_type_error_message = "Invalid notification response command type: " + response_command_type;
+		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response_command_type != await_notification_response_info.response_command_type, invalid_response_type_error_message.c_str(), device_identifier, method_id);
 
-				std::string response_message = boost::any_cast<std::string>(response[post_notification_info.response_property_name]);
-				print(json({ { kResponse,  response_message },{ kId, method_id },{ kDeviceId, device_identifier } }));
-			}
-			else
-			{
-				print_error("ObserveNotification timeout.", device_identifier, method_id);
-			}
+		std::string response_message = boost::any_cast<std::string>(response[await_notification_response_info.response_property_name]);
+		print(json({ { kResponse,  response_message }, { kId, method_id }, { kDeviceId, device_identifier } }));
 	}
 	else
 	{
-		print(json({ { kResponse,  "Successfully sent notification" },{ kId, method_id },{ kDeviceId, device_identifier } }));
+		print_error("ObserveNotification timeout.", device_identifier, method_id);
 	}
 }
 
@@ -1360,7 +1357,7 @@ int main()
 					perform_detached_operation(device_log, device_identifier, method_id);
 				}
 			}
-			else if (method_name == "notify")
+			else if (method_name == "postNotification")
 			{
 				for (json &arg : method_args)
 				{
@@ -1370,13 +1367,27 @@ int main()
 					std::string device_identifier = arg.value(kDeviceId, "");
 					std::string command_type = arg.value(kCommandType, "");
 					std::string notification_name = arg.value(kNotificationName, "");
-					std::string response_command_type = arg.value(kResponseCommandType, "");
-					std::string response_key_name = arg.value(kResponsePropertyName, "");
-					bool should_wait_for_response = arg.value(kShouldWaitForResponse, false);
 					int timeout = arg.value(kTimeout, 0);
 
-					PostNotificationInfo post_notification_info({ command_type, notification_name, response_command_type, response_key_name, should_wait_for_response, timeout });
+					PostNotificationInfo post_notification_info({ command_type, notification_name});
 					std::thread([=]() { post_notification(device_identifier, post_notification_info, method_id); }).detach();
+				}
+			}
+			else if (method_name == "awaitNotificatioNResponse")
+			{
+				for (json &arg : method_args)
+				{
+					if (!validate_device_id_and_attrs(arg, method_id, { kResponseCommandType, kSocket, kResponsePropertyName }))
+						continue;
+
+					std::string device_identifier = arg.value(kDeviceId, "");
+					std::string response_command_type = arg.value(kResponseCommandType, "");
+					std::string response_key_name = arg.value(kResponsePropertyName, "");
+					SOCKET socket = arg.value(kSocket, 0);
+					int timeout = arg.value(kTimeout, 0);
+
+					AwaitNotificationResponseInfo await_notification_response_info({ response_command_type, response_key_name, socket, timeout });
+					std::thread([=]() { await_notification_response(device_identifier, await_notification_response_info, method_id); }).detach();
 				}
 			}
 			else if (method_name == "start")

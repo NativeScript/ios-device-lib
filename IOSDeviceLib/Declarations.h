@@ -27,9 +27,13 @@ struct PostNotificationInfo
 {
 	std::string command_type;
 	std::string notification_name;
+};
+
+struct AwaitNotificationResponseInfo
+{
 	std::string response_command_type;
 	std::string response_property_name;
-	bool should_wait_for_response;
+	SOCKET socket;
 	int timeout;
 };
 
