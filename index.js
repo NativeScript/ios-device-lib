@@ -20,6 +20,7 @@ const MethodNames = {
 	start: "start",
 	stop: "stop",
 	apps: "apps",
+	connectToPort: "connectToPort"
 };
 
 const Events = {
@@ -81,6 +82,10 @@ class IOSDeviceLib extends EventEmitter {
 
 	startDeviceLog(deviceIdentifiers) {
 		this._getPromise(MethodNames.log, deviceIdentifiers, { shouldEmit: true });
+	}
+
+	connectToPort(connectToPortArray) {
+		return connectToPortArray.map(connectToPortObject => this._getPromise(MethodNames.connectToPort, [connectToPortObject]));
 	}
 
 	dispose(signal) {

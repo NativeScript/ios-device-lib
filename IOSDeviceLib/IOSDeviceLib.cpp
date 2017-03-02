@@ -1405,7 +1405,7 @@ int main()
 					stop_app(device_identifier, application_identifier, ddi, method_id);
 				}
 			}
-			else if (method_name == "connect")
+			else if (method_name == "connectToPort")
 			{
 				for (json &arg : method_args)
 				{
