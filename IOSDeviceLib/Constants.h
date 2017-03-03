@@ -38,6 +38,7 @@ static const char *kDeviceFound = "deviceFound";
 static const char *kDeviceLost = "deviceLost";
 static const char *kDeviceTrusted = "deviceTrusted";
 static const char *kDeviceUnknown = "deviceUnknown";
+static const char *kSocketMessageReceived = "socketMessageReceived";
 
 static const char *kId = "id";
 static const char *kNullMessageId = "null";

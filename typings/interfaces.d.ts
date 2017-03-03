@@ -80,8 +80,11 @@ declare module IOSDeviceLib {
 		response: IApplicationInfo[];
 	}
 
-	interface IDeviceLogData extends IDeviceId {
+	interface IMessage {
 		message: string;
+	}
+
+	interface IDeviceLogData extends IDeviceId, IMessage {
 	}
 
 	interface IDeviceApplication {
@@ -101,9 +104,18 @@ declare module IOSDeviceLib {
 		port: number;
 	}
 
-	interface ISendMessageToSocketData extends IDeviceId {
+	interface ISocketData extends IDeviceId {
 		socket: number;
-		message: string;
+	}
+
+	interface ISendMessageToSocketData extends ISocketData, IMessage {
+	}
+
+	interface IReceiveMessagesFromSocketData extends ISocketData {
+		callback: SocketMessageHandler;
+	}
+
+	interface ISocketMessage extends ISocketData, IMessage {
 	}
 
 	interface IOSDeviceLib extends NodeJS.EventEmitter {
@@ -123,7 +135,10 @@ declare module IOSDeviceLib {
 		startDeviceLog(deviceIdentifiers: string[]): void;
 		connectToPort(connectToPortArray: IConnectToPortData[]): Promise<IDeviceResponse>[];
 		sendMessageToSocket(sendMessageToSocketArray: ISendMessageToSocketData[]): Promise<IDeviceResponse>[];
+		readMessagesFromSocket(readMessagesFromSocketArray: ISocketData[]): void;
 		dispose(signal?: string): void;
 		on(event: "deviceLogData", listener: (response: IDeviceLogData) => void): this;
 	}
+
+	declare type SocketMessageHandler = (message: ISocketMessage) => void;
 }
