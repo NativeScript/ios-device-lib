@@ -1253,7 +1253,7 @@ int main()
 #ifdef _WIN32
 	_setmode(_fileno(stdout), _O_BINARY);
 
-	if (!load_dlls())
+	if (load_dlls())
 	{
 		return -1;
 	}
