@@ -1243,9 +1243,23 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 
 void send_message_to_socket(std::string device_identifier, SOCKET socket, std::string message, std::string method_id)
 {
-	int bytes_sent = send_message(message, socket);
+	int bytes_sent = send_utf16_message(message, socket, message.size());
 
 	print(json({ { kResponse, bytes_sent }, { kId, method_id }, { kDeviceId, device_identifier } }));
+}
+
+void read_messages_from_socket(std::string device_identifier, SOCKET socket, std::string method_id)
+{
+	// TODO: check if we need to pass different message length
+	// because we will receive utf16 messages.
+	std::string message;
+	
+	while ((message = receive_message_raw(socket)).size() > 0)
+	{
+		print(json({ { kMessage, message }, { kDeviceId, device_identifier}, { kId, method_id }, { kSocket, socket }, { kEventString, kSocketMessageReceived } }));
+		// TODO: discuss the sleep duration.
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
 }
 
 int main()
@@ -1444,6 +1458,15 @@ int main()
 					std::string device_identifier = arg.value(kDeviceId, "");
 					std::string message = arg.value(kMessage, "");
 					std::thread([=]() { send_message_to_socket(device_identifier, socket, message, method_id); }).detach();
+				}
+			}
+			else if (method_name == "readMessagesFromSocket")
+			{
+				for (json &arg : method_args)
+				{
+					SOCKET socket = arg.value(kSocket, -1);
+					std::string device_identifier = arg.value(kDeviceId, "");
+					std::thread([=]() { read_messages_from_socket(device_identifier, socket, method_id); }).detach();
 				}
 			}
 			else if (method_name == "exit")

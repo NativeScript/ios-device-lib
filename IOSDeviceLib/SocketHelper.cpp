@@ -4,11 +4,21 @@
 #include "PlistCpp/PlistDate.hpp"
 #include "PlistCpp/include/boost/any.hpp"
 
-
 int send_message(const char* message, SOCKET socket, long long length)
 {
 	LengthEncodedMessage length_encoded_message = get_message_with_encoded_length(message, length);
 	return send(socket, length_encoded_message.message, length_encoded_message.length, 0);
+}
+
+int send_utf16_message(std::string message, SOCKET socket, long long length)
+{
+	Utf16Message utf16_message = get_utf16_message_with_encoded_length(message.c_str(), length);
+#ifdef _WIN32
+	const char *message_buffer = (const char*)utf16_message.message;
+#else
+	const unsigned char *message_buffer = utf16_message.message;
+#endif // _WIN32
+	return send(socket, message_buffer, utf16_message.length, 0);
 }
 
 int send_message(std::string message, SOCKET socket, long long length)
@@ -86,4 +96,18 @@ LengthEncodedMessage get_message_with_encoded_length(const char* message, long l
 	memcpy(length_encoded_message, &packed_length, packed_length_size);
 	memcpy(length_encoded_message + packed_length_size, message, length);
 	return{ length_encoded_message, message_len };
+}
+
+Utf16Message get_utf16_message_with_encoded_length(const char* message, long long length)
+{
+	if (length < 0)
+		length = strlen(message);
+
+	unsigned long message_len = length + 4;
+	unsigned char *utf16_message = new unsigned char[message_len];
+	unsigned long packed_length = htonl(length);
+	size_t packed_length_size = 4;
+	memcpy(utf16_message, &packed_length, packed_length_size);
+	memcpy(utf16_message + packed_length_size, message, length);
+	return{ utf16_message, message_len };
 }
