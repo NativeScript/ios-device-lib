@@ -104,10 +104,20 @@ struct DeviceData {
 	std::map<const char*, HANDLE> services;
 	int sessions;
 	std::map<std::string, ApplicationCache> apps_cache;
+	struct DeviceServerData* device_server_data;
 
-	//~DeviceData() {
-	//	//device_info
-	//}
+	void kill_device_server()
+	{
+		if (device_server_data != nullptr)
+		{
+			delete device_server_data;
+			device_server_data = nullptr;
+		}
+	}
+
+	~DeviceData() {
+		kill_device_server();
+	}
 };
 
 struct FileUploadData {

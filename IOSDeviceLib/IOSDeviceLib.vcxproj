@@ -170,6 +170,7 @@
     <ClCompile Include="PlistCpp\PlistDate.cpp" />
     <ClCompile Include="PlistCpp\pugixml.cpp" />
     <ClCompile Include="Printing.cpp" />
+    <ClCompile Include="ServerHelper.cpp" />
     <ClCompile Include="SocketHelper.cpp" />
     <ClCompile Include="StringHelper.cpp" />
     <ClCompile Include="windows_impl.cpp" />
@@ -450,6 +451,7 @@
     <ClInclude Include="PlistCpp\pugiconfig.hpp" />
     <ClInclude Include="PlistCpp\pugixml.hpp" />
     <ClInclude Include="Printing.h" />
+    <ClInclude Include="ServerHelper.h" />
     <ClInclude Include="SocketHelper.h" />
     <ClInclude Include="StringHelper.h" />
   </ItemGroup>

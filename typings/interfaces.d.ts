@@ -119,6 +119,11 @@ declare module IOSDeviceLib {
 	interface ISocketMessage extends ISocketData, IMessage {
 	}
 
+	interface IConnectToPortResponse extends IDeviceId {
+		host: string;
+		port: number;
+	}
+
 	interface IOSDeviceLib extends NodeJS.EventEmitter {
 		new (onDeviceFound: (found: IDeviceActionInfo) => void, onDeviceLost: (found: IDeviceActionInfo) => void): IOSDeviceLib;
 		install(ipaPath: string, deviceIdentifiers: string[]): Promise<IDeviceResponse>[];
@@ -134,9 +139,7 @@ declare module IOSDeviceLib {
 		start(startArray: IDdiApplicationData[]): Promise<IDeviceResponse>[];
 		stop(stopArray: IDdiApplicationData[]): Promise<IDeviceResponse>[];
 		startDeviceLog(deviceIdentifiers: string[]): void;
-		connectToPort(connectToPortArray: IConnectToPortData[]): Promise<IDeviceResponse>[];
-		sendMessageToSocket(sendMessageToSocketArray: ISendMessageToSocketData[]): Promise<IDeviceResponse>[];
-		readMessagesFromSocket(readMessagesFromSocketArray: IReceiveMessagesFromSocketData[]): void;
+		connectToPort(connectToPortArray: IConnectToPortData[]): Promise<IConnectToPortResponse>[];
 		dispose(signal?: string): void;
 		on(event: "deviceLogData", listener: (response: IDeviceLogData) => void): this;
 	}

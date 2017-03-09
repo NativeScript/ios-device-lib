@@ -50,9 +50,6 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 					this.emit(Constants.DeviceLostEventName, message);
 					this.emit(Constants.DeviceFoundEventName, message);
 					break;
-				case Constants.SocketMessageReceived:
-					this.emit(Constants.SocketMessageReceived, message);
-					break;
 			}
 		} else {
 			this.emit(Constants.DataEventName, message);

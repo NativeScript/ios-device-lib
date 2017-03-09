@@ -65,6 +65,7 @@ static const char *kShouldWaitForResponse = "shouldWaitForResponse";
 static const char *kCommandType = "commandType";
 static const char *kTimeout = "timeout";
 static const char *kPort = "port";
+static const char *kHost = "host";
 static const char *kComplete = "Complete";
 static const char *kCode = "code";
 static const char *kProductVersion = "ProductVersion";
@@ -79,3 +80,5 @@ static const std::string kFilePrefix("file:///");
 static const std::string kDocumentsFolder("/Documents/");
 static const std::string kVendDocumentsCommandName("VendDocuments");
 static const std::string kVendContainerCommandName("VendContainer");
+
+static const char *kLocalhostAddress = "127.0.0.1";

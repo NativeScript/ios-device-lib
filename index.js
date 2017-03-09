@@ -21,9 +21,7 @@ const MethodNames = {
 	start: "start",
 	stop: "stop",
 	apps: "apps",
-	connectToPort: "connectToPort",
-	sendMessageToSocket: "sendMessageToSocket",
-	readMessagesFromSocket: "readMessagesFromSocket"
+	connectToPort: "connectToPort"
 };
 
 const Events = {
@@ -97,20 +95,6 @@ class IOSDeviceLib extends EventEmitter {
 
 	sendMessageToSocket(sendMessageToSocketArray) {
 		return sendMessageToSocketArray.map(sendMessageToSocketObject => this._getPromise(MethodNames.sendMessageToSocket, [sendMessageToSocketObject]));
-	}
-
-	readMessagesFromSocket(readMessagesFromSocketArray) {
-		readMessagesFromSocketArray.forEach(readMessagesFromSocketObject => {
-			// TODO: add method to remove event handler.
-			this._iosDeviceLibStdioHandler.on(Constants.SocketMessageReceived, (data) => {
-				readMessagesFromSocketObject.callback.call(readMessagesFromSocketObject.context, data);
-			});
-			const id = uuid.v4();
-			this._iosDeviceLibStdioHandler.writeData(this._getMessage(id, MethodNames.readMessagesFromSocket, [{
-				deviceId: readMessagesFromSocketObject.deviceId,
-				socket: readMessagesFromSocketObject.socket
-			}]));
-		});
 	}
 
 	dispose(signal) {

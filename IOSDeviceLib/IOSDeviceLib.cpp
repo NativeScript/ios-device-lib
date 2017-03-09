@@ -4,9 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <memory>
-#include <thread>
 #include <algorithm>
-#include <mutex>
 #include <sys/stat.h>
 
 #include "json.hpp"
@@ -21,6 +19,7 @@
 #include "Constants.h"
 #include "Printing.h"
 #include "CommonFunctions.h"
+#include "ServerHelper.h"
 
 #ifndef _WIN32
 #include <sys/socket.h>
@@ -1216,7 +1215,15 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 #ifdef _WIN32
 	print_error("This functionality works only on OSX.", device_identifier, method_id);
 #else
-	DeviceInfo* device_info = devices[device_identifier].device_info;
+	DeviceData device = devices[device_identifier];
+
+	if (device.device_server_data != nullptr)
+	{
+		// Dispose the old connection.
+		device.kill_device_server();
+	}
+
+	DeviceInfo* device_info = device.device_info;
 
 	int interface_type = AMDeviceGetInterfaceType(device_info);
 
@@ -1227,39 +1234,47 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 	}
 
 	int connection_id = AMDeviceGetConnectionID(device_info);
-	int socket;
-	int usb_result = USBMuxConnectByPort(connection_id, HTONS(port), &socket);
+	int device_socket;
+	int usb_result = USBMuxConnectByPort(connection_id, HTONS(port), &device_socket);
 
-	if (socket < 0)
+	if (device_socket < 0)
 	{
 		print_error("USBMuxConnectByPort returned bad file descriptor", device_identifier, method_id, usb_result);
 	}
 	else
 	{
-		print(json({ { kResponse, socket },{ kId, method_id },{ kDeviceId, device_identifier } }));
+		DeviceServerData server_socket_data = create_server(device_socket, kLocalhostAddress);
+		device.device_server_data = &server_socket_data;
+		if (server_socket_data.server_socket <= 0)
+		{
+			print_error("Failed to start the proxy server between the Chrome Dev Tools and the iOS device.", device_identifier, method_id);
+			return;
+		}
+
+		// We can use the device socket which is returned from USBMuxConnectByPort only in the C++ code.
+		// That's why we need to create a server which will serve to expose the socket.
+		// When we receive a client connection we will create a client socket.
+		// Each message received on the client socket will be sent to the device socket.
+		// Each message from the device socket will be sent to the client socket.
+		struct sockaddr_in server_address = server_socket_data.server_address;
+		unsigned short port = ntohs(server_address.sin_port);
+		socklen_t address_length = sizeof(server_address);
+		
+		// Return the host address and the port to the client.
+		print(json({ { kHost, kLocalhostAddress }, { kPort, port }, { kId, method_id }, { kDeviceId, device_identifier } }));
+
+		// Wait for the client to connect.
+		SOCKET client_socket = accept(server_socket_data.server_socket, (sockaddr*)&server_address, &address_length);
+
+		// Proxy the messages from the client socket to the device socket
+		// and from the device socket to the client socket.
+		proxy_socket_io(client_socket, device_socket, [&](SOCKET client_fd, SOCKET device_fd)
+		{
+			close(client_fd);
+			device.kill_device_server();
+		});
 	}
 #endif // _WIN32
-}
-
-void send_message_to_socket(std::string device_identifier, SOCKET socket, std::string message, std::string method_id)
-{
-	int bytes_sent = send_utf16_message(message, socket, message.size());
-
-	print(json({ { kResponse, bytes_sent }, { kId, method_id }, { kDeviceId, device_identifier } }));
-}
-
-void read_messages_from_socket(std::string device_identifier, SOCKET socket, std::string method_id)
-{
-	// TODO: check if we need to pass different message length
-	// because we will receive utf16 messages.
-	std::string message;
-	
-	while ((message = receive_message_raw(socket)).size() > 0)
-	{
-		print(json({ { kMessage, message }, { kDeviceId, device_identifier}, { kId, method_id }, { kSocket, socket }, { kEventString, kSocketMessageReceived } }));
-		// TODO: discuss the sleep duration.
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	}
 }
 
 int main()
@@ -1438,7 +1453,7 @@ int main()
 					stop_app(device_identifier, application_identifier, ddi, method_id);
 				}
 			}
-			else if (method_name == "connectToPort")
+			else if (method_name == "connectToDeviceSocket")
 			{
 				for (json &arg : method_args)
 				{
@@ -1448,25 +1463,6 @@ int main()
 					std::string device_identifier = arg.value(kDeviceId, "");
 					int port = arg.value(kPort, -1);
 					std::thread([=]() { connect_to_port(device_identifier, port, method_id); }).detach();
-				}
-			}
-			else if (method_name == "sendMessageToSocket")
-			{
-				for (json &arg : method_args)
-				{
-					SOCKET socket = arg.value(kSocket, -1);
-					std::string device_identifier = arg.value(kDeviceId, "");
-					std::string message = arg.value(kMessage, "");
-					std::thread([=]() { send_message_to_socket(device_identifier, socket, message, method_id); }).detach();
-				}
-			}
-			else if (method_name == "readMessagesFromSocket")
-			{
-				for (json &arg : method_args)
-				{
-					SOCKET socket = arg.value(kSocket, -1);
-					std::string device_identifier = arg.value(kDeviceId, "");
-					std::thread([=]() { read_messages_from_socket(device_identifier, socket, method_id); }).detach();
 				}
 			}
 			else if (method_name == "exit")

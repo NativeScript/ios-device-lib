@@ -10,17 +10,6 @@ int send_message(const char* message, SOCKET socket, long long length)
 	return send(socket, length_encoded_message.message, length_encoded_message.length, 0);
 }
 
-int send_utf16_message(std::string message, SOCKET socket, long long length)
-{
-	Utf16Message utf16_message = get_utf16_message_with_encoded_length(message.c_str(), length);
-#ifdef _WIN32
-	const char *message_buffer = (const char*)utf16_message.message;
-#else
-	const unsigned char *message_buffer = utf16_message.message;
-#endif // _WIN32
-	return send(socket, message_buffer, utf16_message.length, 0);
-}
-
 int send_message(std::string message, SOCKET socket, long long length)
 {
 	return send_message(message.c_str(), socket, length);
@@ -68,6 +57,107 @@ std::map<std::string, boost::any> receive_message(SOCKET socket)
 	return dict;
 }
 
+std::mutex receive_utf16_message_mutex;
+Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
+{
+	receive_utf16_message_mutex.lock();
+	// We do not want to stay at recv forever.
+	int should_read_from_socket_result = should_read_from_socket(fd, 1);
+	if (should_read_from_socket_result == 0)
+	{
+		Utf16Message* empty_result = new Utf16Message();
+		empty_result->message = new unsigned char[0];
+		empty_result->length = 0;
+		receive_utf16_message_mutex.unlock();
+		return empty_result;
+	}
+	else if (should_read_from_socket_result == -1)
+	{
+		receive_utf16_message_mutex.unlock();
+		return nullptr;
+	}
+
+	int bytes_read;
+	long long final_length = 0;
+	// We need to create new unsigned char[] here because if we don't
+	// the memcpy will fail with EXC_BAD_ACCESS
+	unsigned char *result = new unsigned char[0];
+
+	do
+	{
+		unsigned char *buffer = new unsigned char[size];
+		bytes_read = recv(fd, (char*)buffer, size, 0);
+
+		if (bytes_read > 0)
+		{
+			size_t temp_size = final_length + bytes_read;
+			unsigned char *temp = new unsigned char[temp_size + 1];
+
+			memcpy(temp, result, final_length);
+			memcpy(temp + final_length, buffer, bytes_read);
+
+			// Delete the result because we change it's address to temp's address.
+			delete[] result;
+			result = temp;
+			final_length += bytes_read;
+		}
+		else if (bytes_read < 0)
+		{
+			receive_utf16_message_mutex.unlock();
+			return nullptr;
+		}
+
+		delete[] buffer;
+	} while (bytes_read == size);
+
+	Utf16Message* utf16_message = new Utf16Message();
+	utf16_message->message = result;
+	utf16_message->length = final_length;
+
+	receive_utf16_message_mutex.unlock();
+
+	return utf16_message;
+}
+
+void proxy_socket_messages(SOCKET first, SOCKET second)
+{
+	Utf16Message* message;
+
+	while ((message = receive_utf16_message(first)) != nullptr)
+	{
+		if (message->length)
+		{
+#ifdef _WIN32
+			char* message_buffer = (char*)message->message;
+#else
+			unsigned char* message_buffer = message->message;
+#endif // _WIN32
+
+			send(second, message_buffer, message->length, NULL);
+		}
+
+		// Delete the message to free the message->message memory.
+		delete message;
+	}
+}
+
+void proxy_socket_io(SOCKET first, SOCKET second, std::function<void(SOCKET, SOCKET)> socket_closed_callback)
+{
+	std::thread([=]()
+	{
+		// Send the messages received on the first socket to the second socket.
+		proxy_socket_messages(first, second);
+		socket_closed_callback(first, second);
+	});
+
+	std::thread([=]()
+	{
+		// Send the messages received on the second socket to the first socket.
+		proxy_socket_messages(second, first);
+		socket_closed_callback(first, second);
+	});
+}
+
 std::string receive_message_raw(SOCKET socket, int size)
 {
 	int bytes_read;
@@ -96,18 +186,4 @@ LengthEncodedMessage get_message_with_encoded_length(const char* message, long l
 	memcpy(length_encoded_message, &packed_length, packed_length_size);
 	memcpy(length_encoded_message + packed_length_size, message, length);
 	return{ length_encoded_message, message_len };
-}
-
-Utf16Message get_utf16_message_with_encoded_length(const char* message, long long length)
-{
-	if (length < 0)
-		length = strlen(message);
-
-	unsigned long message_len = length + 4;
-	unsigned char *utf16_message = new unsigned char[message_len];
-	unsigned long packed_length = htonl(length);
-	size_t packed_length_size = 4;
-	memcpy(utf16_message, &packed_length, packed_length_size);
-	memcpy(utf16_message + packed_length_size, message, length);
-	return{ utf16_message, message_len };
 }
