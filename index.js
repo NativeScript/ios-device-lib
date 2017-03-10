@@ -29,9 +29,10 @@ const Events = {
 };
 
 class IOSDeviceLib extends EventEmitter {
-	constructor(onDeviceFound, onDeviceLost) {
+	constructor(onDeviceFound, onDeviceLost, options) {
 		super();
-		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler();
+		options = options || {};
+		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler(options.debug);
 		this._iosDeviceLibStdioHandler.startReadingData();
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceFoundEventName, onDeviceFound);
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceLostEventName, onDeviceLost);
@@ -91,10 +92,6 @@ class IOSDeviceLib extends EventEmitter {
 
 	connectToPort(connectToPortArray) {
 		return connectToPortArray.map(connectToPortObject => this._getPromise(MethodNames.connectToPort, [connectToPortObject]));
-	}
-
-	sendMessageToSocket(sendMessageToSocketArray) {
-		return sendMessageToSocketArray.map(sendMessageToSocketObject => this._getPromise(MethodNames.sendMessageToSocket, [sendMessageToSocketObject]));
 	}
 
 	dispose(signal) {

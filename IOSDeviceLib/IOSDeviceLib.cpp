@@ -257,7 +257,7 @@ void device_notification_callback(const DevicePointer* device_ptr)
 	{
 		case kADNCIMessageConnected:
 		{
-			devices[device_identifier] = { device_ptr->device_info };
+			devices[device_identifier] = { device_ptr->device_info, nullptr };
 			result[kEventString] = kDeviceFound;
 			get_device_properties(device_identifier, result);
 			break;
@@ -283,7 +283,7 @@ void device_notification_callback(const DevicePointer* device_ptr)
 		}
 		case kADNCIMessageTrusted:
 		{
-			devices[device_identifier] = { device_ptr->device_info };
+			devices[device_identifier] = { device_ptr->device_info, nullptr };
 			result[kEventString] = kDeviceTrusted;
 			get_device_properties(device_identifier, result);
 			break;
@@ -1243,20 +1243,21 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 	}
 	else
 	{
-		DeviceServerData server_socket_data = create_server(device_socket, kLocalhostAddress);
-		if (server_socket_data.server_socket <= 0)
+		DeviceServerData* server_socket_data = create_server(device_socket, kLocalhostAddress);
+		if (server_socket_data == nullptr)
 		{
+			delete server_socket_data;
 			print_error("Failed to start the proxy server between the Chrome Dev Tools and the iOS device.", device_identifier, method_id);
 			return;
 		}
 
-		device.device_server_data = &server_socket_data;
+		device.device_server_data = server_socket_data;
 		// We can use the device socket which is returned from USBMuxConnectByPort only in the C++ code.
 		// That's why we need to create a server which will serve to expose the socket.
 		// When we receive a client connection we will create a client socket.
 		// Each message received on the client socket will be sent to the device socket.
 		// Each message from the device socket will be sent to the client socket.
-		struct sockaddr_in server_address = server_socket_data.server_address;
+		struct sockaddr_in server_address = server_socket_data->server_address;
 		unsigned short port = ntohs(server_address.sin_port);
 		socklen_t address_length = sizeof(server_address);
 		
@@ -1264,13 +1265,13 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 		print(json({ { kHost, kLocalhostAddress }, { kPort, port }, { kId, method_id }, { kDeviceId, device_identifier } }));
 
 		// Wait for the client to connect.
-		SOCKET client_socket = accept(server_socket_data.server_socket, (sockaddr*)&server_address, &address_length);
+		SOCKET client_socket = accept(server_socket_data->server_socket, (sockaddr*)&server_address, &address_length);
 
 		// Proxy the messages from the client socket to the device socket
 		// and from the device socket to the client socket.
-		proxy_socket_io(client_socket, device_socket, [&](SOCKET client_fd, SOCKET device_fd)
-		{
+		proxy_socket_io(client_socket, device_socket, [](SOCKET client_fd) {
 			close(client_fd);
+		}, [&](SOCKET device_socket) {
 			device.kill_device_server();
 		});
 	}

@@ -27,7 +27,7 @@ struct sockaddr_in bind_socket(SOCKET socket, const char* host)
 	return server_address;
 }
 
-DeviceServerData create_server(SOCKET device_socket, const char* host)
+DeviceServerData* create_server(SOCKET device_socket, const char* host)
 {
 # ifdef _WIN32
 	// Start WinSock2
@@ -35,7 +35,7 @@ DeviceServerData create_server(SOCKET device_socket, const char* host)
 	WORD dll_version = MAKEWORD(2, 1);
 	if (WSAStartup(dll_version, &wsa_data) != 0)
 	{
-		return { 0, 0, NULL };
+		return nullptr;
 	}
 #endif // _WIN32
 
@@ -45,5 +45,10 @@ DeviceServerData create_server(SOCKET device_socket, const char* host)
 
 	listen(server_socket, SOMAXCONN);
 
-	return { server_socket, device_socket, server_address };
+	DeviceServerData* result = new DeviceServerData();
+	result->server_socket = server_socket;
+	result->device_socket = device_socket;
+	result->server_address = server_address;
+
+	return result;
 }

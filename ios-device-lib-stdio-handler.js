@@ -11,9 +11,10 @@ const Constants = require("./constants");
 const HeaderSize = 4;
 
 class IOSDeviceLibStdioHandler extends EventEmitter {
-	constructor() {
+	constructor(showDebugInformation) {
 		super();
 		this._unfinishedMessage = new Buffer(0);
+		this._showDebugInformation = showDebugInformation;
 	}
 
 	startReadingData() {
@@ -22,9 +23,11 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 			this._unpackMessages(data);
 		});
 
-		this._chProc.stderr.on("data", (data) => {
-			console.log("TRACE: ", data && data.toString());
-		});
+		if (this._showDebugInformation) {
+			this._chProc.stderr.on("data", (data) => {
+				console.log("TRACE: ", data && data.toString());
+			});
+		}
 	}
 
 	writeData(data) {

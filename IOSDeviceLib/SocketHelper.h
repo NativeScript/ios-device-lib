@@ -46,4 +46,5 @@ std::map<std::string, boost::any> receive_message(SOCKET socket, int timeout);
 std::map<std::string, boost::any> receive_message(SOCKET socket);
 std::string receive_message_raw(SOCKET socket, int size = 1000);
 
-void proxy_socket_io(SOCKET first, SOCKET second, std::function<void(SOCKET, SOCKET)> socket_closed_callback);
+typedef std::function<void(SOCKET)> SocketClosedCallback;
+void proxy_socket_io(SOCKET first, SOCKET second, SocketClosedCallback first_socket_closed_callback, SocketClosedCallback second_socket_closed_callback);

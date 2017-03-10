@@ -33,4 +33,4 @@ struct DeviceServerData {
 };
 
 struct sockaddr_in bind_socket(SOCKET socket, const char* host);
-DeviceServerData create_server(SOCKET device_socket, const char* host);
+DeviceServerData* create_server(SOCKET device_socket, const char* host);

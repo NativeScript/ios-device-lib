@@ -101,10 +101,10 @@ struct ApplicationCache {
 
 struct DeviceData {
 	DeviceInfo* device_info;
+	struct DeviceServerData* device_server_data;
 	std::map<const char*, HANDLE> services;
 	int sessions;
 	std::map<std::string, ApplicationCache> apps_cache;
-	struct DeviceServerData* device_server_data;
 
 	void kill_device_server()
 	{
@@ -113,10 +113,6 @@ struct DeviceData {
 			delete device_server_data;
 			device_server_data = nullptr;
 		}
-	}
-
-	~DeviceData() {
-		kill_device_server();
 	}
 };
 

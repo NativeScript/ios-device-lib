@@ -141,21 +141,19 @@ void proxy_socket_messages(SOCKET first, SOCKET second)
 	}
 }
 
-void proxy_socket_io(SOCKET first, SOCKET second, std::function<void(SOCKET, SOCKET)> socket_closed_callback)
+void proxy_socket_io(SOCKET first, SOCKET second, SocketClosedCallback first_socket_closed_callback, SocketClosedCallback second_socket_closed_callback)
 {
-	std::thread([=]()
-	{
+	std::thread([=]() {
 		// Send the messages received on the first socket to the second socket.
 		proxy_socket_messages(first, second);
-		socket_closed_callback(first, second);
-	});
+		first_socket_closed_callback(first);
+	}).detach();
 
-	std::thread([=]()
-	{
+	std::thread([=]() {
 		// Send the messages received on the second socket to the first socket.
 		proxy_socket_messages(second, first);
-		socket_closed_callback(first, second);
-	});
+		second_socket_closed_callback(second);
+	}).detach();
 }
 
 std::string receive_message_raw(SOCKET socket, int size)
