@@ -1244,13 +1244,13 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 	else
 	{
 		DeviceServerData server_socket_data = create_server(device_socket, kLocalhostAddress);
-		device.device_server_data = &server_socket_data;
 		if (server_socket_data.server_socket <= 0)
 		{
 			print_error("Failed to start the proxy server between the Chrome Dev Tools and the iOS device.", device_identifier, method_id);
 			return;
 		}
 
+		device.device_server_data = &server_socket_data;
 		// We can use the device socket which is returned from USBMuxConnectByPort only in the C++ code.
 		// That's why we need to create a server which will serve to expose the socket.
 		// When we receive a client connection we will create a client socket.
@@ -1453,7 +1453,7 @@ int main()
 					stop_app(device_identifier, application_identifier, ddi, method_id);
 				}
 			}
-			else if (method_name == "connectToDeviceSocket")
+			else if (method_name == "connectToPort")
 			{
 				for (json &arg : method_args)
 				{

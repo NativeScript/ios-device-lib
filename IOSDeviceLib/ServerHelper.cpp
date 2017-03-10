@@ -1,6 +1,4 @@
-#include "ServerHelper.h";
-
-std::vector<DeviceServerData*> servers;
+#include "ServerHelper.h"
 
 struct sockaddr_in bind_socket(SOCKET socket, const char* host)
 {
@@ -47,9 +45,5 @@ DeviceServerData create_server(SOCKET device_socket, const char* host)
 
 	listen(server_socket, SOMAXCONN);
 
-	DeviceServerData result = { server_socket, device_socket, server_address };
-
-	servers.push_back(&result);
-
-	return result;
+	return { server_socket, device_socket, server_address };
 }
