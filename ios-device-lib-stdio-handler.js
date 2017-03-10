@@ -17,7 +17,7 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 	}
 
 	startReadingData() {
-		this._chProc = spawn(path.join(__dirname, "bin", os.platform(), os.arch(), "ios-device-lib"));
+		this._chProc = spawn(path.join(__dirname, "bin", os.platform(), os.arch(), "ios-device-lib").replace("app.asar", "app.asar.unpacked"));
 		this._chProc.stdout.on("data", (data) => {
 			this._unpackMessages(data);
 		});
