@@ -3,8 +3,9 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <memory>
+#include <mutex>
 #include <thread>
+#include <memory>
 #include <algorithm>
 #include <sys/stat.h>
 
@@ -13,17 +14,13 @@
 #include "PlistCpp/PlistDate.hpp"
 #include "PlistCpp/include/boost/any.hpp"
 #include "FileHelper.h"
-#include "SocketHelper.h"
 #include "StringHelper.h"
 #include "Declarations.h"
 #include "GDBHelper.h"
 #include "Constants.h"
 #include "Printing.h"
 #include "CommonFunctions.h"
-
-#ifndef _WIN32
-#include <sys/socket.h>
-#endif
+#include "ServerHelper.h"
 
 #ifdef _WIN32
 #pragma region Dll_Variable_Definitions
@@ -121,33 +118,40 @@ CFStringRef create_CFString(const char* str)
 	return CFStringCreateWithCString(NULL, str, kCFStringEncodingUTF8);
 }
 
+std::mutex start_session_mutex;
 int start_session(std::string& device_identifier)
 {
+	start_session_mutex.lock();
 	if (devices[device_identifier].sessions < 1)
 	{
 		const DeviceInfo* device_info = devices[device_identifier].device_info;
-		RETURN_IF_FAILED_RESULT(AMDeviceConnect(device_info));
+		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceConnect(device_info), start_session_mutex);
 		if (!AMDeviceIsPaired(device_info))
 		{
-			RETURN_IF_FAILED_RESULT(AMDevicePair(device_info));
+			UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDevicePair(device_info), start_session_mutex);
 		}
 
-		RETURN_IF_FAILED_RESULT(AMDeviceValidatePairing(device_info));
-		RETURN_IF_FAILED_RESULT(AMDeviceStartSession(device_info));
+		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceValidatePairing(device_info), start_session_mutex);
+		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceStartSession(device_info), start_session_mutex);
 	}
 
 	++devices[device_identifier].sessions;
+	start_session_mutex.unlock();
 	return 0;
 }
 
+std::mutex stop_session_mutex;
 void stop_session(std::string& device_identifier)
 {
+	stop_session_mutex.lock();
 	if (--devices[device_identifier].sessions < 1)
 	{
 		const DeviceInfo *device_info = devices[device_identifier].device_info;
 		AMDeviceStopSession(device_info);
 		AMDeviceDisconnect(device_info);
 	}
+
+	stop_session_mutex.unlock();
 }
 
 std::string get_device_property_value(std::string& device_identifier, const char* property_name)
@@ -250,7 +254,7 @@ void device_notification_callback(const DevicePointer* device_ptr)
 	{
 		case kADNCIMessageConnected:
 		{
-			devices[device_identifier] = { device_ptr->device_info };
+			devices[device_identifier] = { device_ptr->device_info, nullptr };
 			result[kEventString] = kDeviceFound;
 			get_device_properties(device_identifier, result);
 			break;
@@ -276,7 +280,7 @@ void device_notification_callback(const DevicePointer* device_ptr)
 		}
 		case kADNCIMessageTrusted:
 		{
-			devices[device_identifier] = { device_ptr->device_info };
+			devices[device_identifier] = { device_ptr->device_info, nullptr };
 			result[kEventString] = kDeviceTrusted;
 			get_device_properties(device_identifier, result);
 			break;
@@ -345,17 +349,22 @@ void start_run_loop()
 	CFRunLoopRun();
 }
 
+std::mutex start_service_mutex;
 HANDLE start_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error)
 {
+	start_service_mutex.lock();
 	if (!devices.count(device_identifier))
 	{
 		if (should_log_error)
 			print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
+		
+		start_service_mutex.unlock();
 		return NULL;
 	}
 
 	if (devices[device_identifier].services.count(service_name))
 	{
+		start_service_mutex.unlock();
 		return devices[device_identifier].services[service_name];
 	}
 
@@ -371,13 +380,21 @@ HANDLE start_service(std::string device_identifier, const char* service_name, st
 		message += service_name;
 		if (should_log_error)
 			print_error(message.c_str(), device_identifier, method_id, result);
+			
+		start_service_mutex.unlock();
 		return NULL;
 	}
+
 	devices[device_identifier].services[service_name] = socket;
 
+	start_service_mutex.unlock();
 	return socket;
 }
 
+// We do not use this method.
+// When we used it to upload files to the live ION we had problems writing them on the root of the ION.
+// The method is not deleted because it works for some applications and we can use it in the future for something.
+#if 0
 HANDLE start_house_arrest(std::string device_identifier, const char* application_identifier, std::string method_id)
 {
 	if (!devices.count(device_identifier))
@@ -409,6 +426,7 @@ HANDLE start_house_arrest(std::string device_identifier, const char* application
 	devices[device_identifier].services[kHouseArrest] = houseFd;
 	return houseFd;
 }
+#endif
 
 HANDLE start_debug_server(std::string device_identifier, std::string ddi, std::string method_id)
 {
@@ -1022,8 +1040,8 @@ void device_log(std::string device_identifier, std::string method_id)
 
 void post_notification(std::string device_identifier, PostNotificationInfo post_notification_info, std::string method_id)
 {
-	HANDLE socket = start_service(device_identifier, kNotificationProxy, method_id);
-	if (!socket)
+	HANDLE handle = start_service(device_identifier, kNotificationProxy, method_id);
+	if (!handle)
 	{
 		return;
 	}
@@ -1047,31 +1065,29 @@ void post_notification(std::string device_identifier, PostNotificationInfo post_
 							"<string></string>"
 						"</dict>"
 						"</plist>";
+	
+	SOCKET socket = (SOCKET)handle;
+	send_message(xml_command.str().c_str(), socket);
+	print(json({ { kResponse, socket }, { kId, method_id }, { kDeviceId, device_identifier } }));
+}
 
-	send_message(xml_command.str().c_str(), (SOCKET)socket);
-	std::string response_message("");
-	if (post_notification_info.should_wait_for_response)
+void await_notification_response(std::string device_identifier, AwaitNotificationResponseInfo await_notification_response_info, std::string method_id)
+{
+	std::map<std::string, boost::any> response = receive_message(await_notification_response_info.socket, await_notification_response_info.timeout);
+	if (response.size())
 	{
-			std::map<std::string, boost::any> response = receive_message((SOCKET)socket, post_notification_info.timeout);
-			if (response.size())
-			{
-				PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response.count(kErrorKey), boost::any_cast<std::string>(response[kErrorKey]).c_str(), device_identifier, method_id);
+		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response.count(kErrorKey), boost::any_cast<std::string>(response[kErrorKey]).c_str(), device_identifier, method_id);
 
-				std::string response_command_type = boost::any_cast<std::string>(response[kCommandKey]);
-				std::string invalid_response_type_error_message = "Invalid notification response command type: " + response_command_type;
-				PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response_command_type != post_notification_info.response_command_type, invalid_response_type_error_message.c_str(), device_identifier, method_id);
+		std::string response_command_type = boost::any_cast<std::string>(response[kCommandKey]);
+		std::string invalid_response_type_error_message = "Invalid notification response command type: " + response_command_type;
+		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response_command_type != await_notification_response_info.response_command_type, invalid_response_type_error_message.c_str(), device_identifier, method_id);
 
-				std::string response_message = boost::any_cast<std::string>(response[post_notification_info.response_property_name]);
-				print(json({ { kResponse,  response_message },{ kId, method_id },{ kDeviceId, device_identifier } }));
-			}
-			else
-			{
-				print_error("ObserveNotification timeout.", device_identifier, method_id);
-			}
+		std::string response_message = boost::any_cast<std::string>(response[await_notification_response_info.response_property_name]);
+		print(json({ { kResponse,  response_message }, { kId, method_id }, { kDeviceId, device_identifier } }));
 	}
 	else
 	{
-		print(json({ { kResponse,  "Successfully sent notification" },{ kId, method_id },{ kDeviceId, device_identifier } }));
+		print_error("ObserveNotification timeout.", device_identifier, method_id);
 	}
 }
 
@@ -1191,12 +1207,20 @@ void start_app(std::string device_identifier, std::string application_identifier
 	}
 }
 
-void connect_to_port(std::string& device_identifier, int port, std::string& method_id)
+void connect_to_port(std::string device_identifier, int port, std::string method_id)
 {
 #ifdef _WIN32
 	print_error("This functionality works only on OSX.", device_identifier, method_id);
 #else
-	DeviceInfo* device_info = devices[device_identifier].device_info;
+	DeviceData device = devices[device_identifier];
+
+	if (device.device_server_data != nullptr)
+	{
+		// Dispose the old connection.
+		device.kill_device_server();
+	}
+
+	DeviceInfo* device_info = device.device_info;
 
 	int interface_type = AMDeviceGetInterfaceType(device_info);
 
@@ -1207,16 +1231,45 @@ void connect_to_port(std::string& device_identifier, int port, std::string& meth
 	}
 
 	int connection_id = AMDeviceGetConnectionID(device_info);
-	int socket;
-	int usb_result = USBMuxConnectByPort(connection_id, HTONS(port), &socket);
+	int device_socket;
+	int usb_result = USBMuxConnectByPort(connection_id, HTONS(port), &device_socket);
 
-	if (socket < 0)
+	if (device_socket < 0)
 	{
 		print_error("USBMuxConnectByPort returned bad file descriptor", device_identifier, method_id, usb_result);
 	}
 	else
 	{
-		print(json({ { kResponse, socket },{ kId, method_id },{ kDeviceId, device_identifier } }));
+		DeviceServerData* server_socket_data = create_server(device_socket, kLocalhostAddress);
+		if (server_socket_data == nullptr)
+		{
+			print_error("Failed to start the proxy server between the Chrome Dev Tools and the iOS device.", device_identifier, method_id);
+			return;
+		}
+
+		device.device_server_data = server_socket_data;
+		// We can use the device socket which is returned from USBMuxConnectByPort only in the C++ code.
+		// That's why we need to create a server which will serve to expose the socket.
+		// When we receive a client connection we will create a client socket.
+		// Each message received on the client socket will be sent to the device socket.
+		// Each message from the device socket will be sent to the client socket.
+		sockaddr_in server_address = server_socket_data->server_address;
+		unsigned short port = ntohs(server_address.sin_port);
+		socklen_t address_length = sizeof(server_address);
+		
+		// Return the host address and the port to the client.
+		print(json({ { kHost, kLocalhostAddress }, { kPort, port }, { kId, method_id }, { kDeviceId, device_identifier } }));
+
+		// Wait for the client to connect.
+		SOCKET client_socket = accept(server_socket_data->server_socket, (sockaddr*)&server_address, &address_length);
+
+		// Proxy the messages from the client socket to the device socket
+		// and from the device socket to the client socket.
+		proxy_socket_io(client_socket, device_socket, [](SOCKET client_fd) {
+			close_socket(client_fd);
+		}, [&](SOCKET device_socket) {
+			device.kill_device_server();
+		});
 	}
 #endif // _WIN32
 }
@@ -1226,7 +1279,10 @@ int main()
 #ifdef _WIN32
 	_setmode(_fileno(stdout), _O_BINARY);
 
-	RETURN_IF_FAILED_RESULT(load_dlls());
+	if (load_dlls())
+	{
+		return -1;
+	}
 #endif
 
 	std::thread([]() { start_run_loop(); }).detach();
@@ -1335,7 +1391,7 @@ int main()
 					perform_detached_operation(device_log, device_identifier, method_id);
 				}
 			}
-			else if (method_name == "notify")
+			else if (method_name == "postNotification")
 			{
 				for (json &arg : method_args)
 				{
@@ -1345,13 +1401,27 @@ int main()
 					std::string device_identifier = arg.value(kDeviceId, "");
 					std::string command_type = arg.value(kCommandType, "");
 					std::string notification_name = arg.value(kNotificationName, "");
-					std::string response_command_type = arg.value(kResponseCommandType, "");
-					std::string response_key_name = arg.value(kResponsePropertyName, "");
-					bool should_wait_for_response = arg.value(kShouldWaitForResponse, false);
 					int timeout = arg.value(kTimeout, 0);
 
-					PostNotificationInfo post_notification_info({ command_type, notification_name, response_command_type, response_key_name, should_wait_for_response, timeout });
+					PostNotificationInfo post_notification_info({ command_type, notification_name});
 					std::thread([=]() { post_notification(device_identifier, post_notification_info, method_id); }).detach();
+				}
+			}
+			else if (method_name == "awaitNotificationResponse")
+			{
+				for (json &arg : method_args)
+				{
+					if (!validate_device_id_and_attrs(arg, method_id, { kResponseCommandType, kResponsePropertyName }))
+						continue;
+
+					std::string device_identifier = arg.value(kDeviceId, "");
+					std::string response_command_type = arg.value(kResponseCommandType, "");
+					std::string response_key_name = arg.value(kResponsePropertyName, "");
+					SOCKET socket = arg.value(kSocket, 0);
+					int timeout = arg.value(kTimeout, -1);
+
+					AwaitNotificationResponseInfo await_notification_response_info({ response_command_type, response_key_name, socket, timeout });
+					std::thread([=]() { await_notification_response(device_identifier, await_notification_response_info, method_id); }).detach();
 				}
 			}
 			else if (method_name == "start")
@@ -1380,7 +1450,7 @@ int main()
 					stop_app(device_identifier, application_identifier, ddi, method_id);
 				}
 			}
-			else if (method_name == "connect")
+			else if (method_name == "connectToPort")
 			{
 				for (json &arg : method_args)
 				{
@@ -1389,7 +1459,7 @@ int main()
 
 					std::string device_identifier = arg.value(kDeviceId, "");
 					int port = arg.value(kPort, -1);
-					connect_to_port(device_identifier, port, method_id);
+					std::thread([=]() { connect_to_port(device_identifier, port, method_id); }).detach();
 				}
 			}
 			else if (method_name == "exit")

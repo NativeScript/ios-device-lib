@@ -16,10 +16,12 @@ const MethodNames = {
 	download: "download",
 	read: "read",
 	delete: "delete",
-	notify: "notify",
+	postNotification: "postNotification",
+	awaitNotificationResponse: "awaitNotificationResponse",
 	start: "start",
 	stop: "stop",
 	apps: "apps",
+	connectToPort: "connectToPort"
 };
 
 const Events = {
@@ -27,9 +29,10 @@ const Events = {
 };
 
 class IOSDeviceLib extends EventEmitter {
-	constructor(onDeviceFound, onDeviceLost) {
+	constructor(onDeviceFound, onDeviceLost, options) {
 		super();
-		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler();
+		options = options || {};
+		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler(options);
 		this._iosDeviceLibStdioHandler.startReadingData();
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceFoundEventName, onDeviceFound);
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceLostEventName, onDeviceLost);
@@ -63,8 +66,12 @@ class IOSDeviceLib extends EventEmitter {
 		return deleteArray.map(deleteObject => this._getPromise(MethodNames.delete, [deleteObject]));
 	}
 
-	notify(notifyArray) {
-		return notifyArray.map(notificationObject => this._getPromise(MethodNames.notify, [notificationObject]));
+	postNotification(postNotificationArray) {
+		return postNotificationArray.map(notificationObject => this._getPromise(MethodNames.postNotification, [notificationObject]));
+	}
+
+	awaitNotificationResponse(awaitNotificationResponseArray) {
+		return awaitNotificationResponseArray.map(awaitNotificationObject => this._getPromise(MethodNames.awaitNotificationResponse, [awaitNotificationObject]));
 	}
 
 	apps(deviceIdentifiers) {
@@ -81,6 +88,10 @@ class IOSDeviceLib extends EventEmitter {
 
 	startDeviceLog(deviceIdentifiers) {
 		this._getPromise(MethodNames.log, deviceIdentifiers, { shouldEmit: true });
+	}
+
+	connectToPort(connectToPortArray) {
+		return connectToPortArray.map(connectToPortObject => this._getPromise(MethodNames.connectToPort, [connectToPortObject]));
 	}
 
 	dispose(signal) {

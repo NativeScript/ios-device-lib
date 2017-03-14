@@ -6,19 +6,35 @@
 #include "json.hpp"
 
 std::mutex print_mutex;
-
-void print(const char* str)
+void print_core(const char* str, FILE *destinaton)
 {
 	// We need to lock the print method because in some cases we print different parts of messages
 	// from different threads.
 	print_mutex.lock();
 	LengthEncodedMessage length_encoded_message = get_message_with_encoded_length(str);
 	char* buff = new char[length_encoded_message.length];
-	std::setvbuf(stdout, buff, _IOFBF, length_encoded_message.length);
-	fwrite(length_encoded_message.message, length_encoded_message.length, 1, stdout);
-	fflush(stdout);
+	std::setvbuf(destinaton, buff, _IOFBF, length_encoded_message.length);
+	fwrite(length_encoded_message.message, length_encoded_message.length, 1, destinaton);
+	fflush(destinaton);
 	delete[] buff;
 	print_mutex.unlock();
+}
+
+void print(const char* str)
+{
+	print_core(str, stdout);
+}
+
+void trace(const char* str)
+{
+	print_core(str, stderr);
+}
+
+void trace(int num)
+{
+	std::stringstream str;
+	str << num;
+	trace(str.str().c_str());
 }
 
 void print(const nlohmann::json& message)

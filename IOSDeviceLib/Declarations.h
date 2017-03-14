@@ -1,7 +1,7 @@
 #pragma once
 
 #pragma region Macros
-#define RETURN_IF_FAILED_RESULT(expr) ; if((__result = (expr))) { return __result; }
+#define UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(expr, mutex) ; if((__result = (expr))) { mutex.unlock(); return __result; }
 #define PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(expr, error_msg, device_identifier, method_id, value) ; if((__result = (expr))) { print_error(error_msg, device_identifier, method_id, __result); return value; }
 #define PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(expr, error_msg, device_identifier, method_id) ; if((__result = (expr))) { print_error(error_msg, device_identifier, method_id, __result); return; }
 #pragma endregion Macros
@@ -9,17 +9,14 @@
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
 
 #pragma comment(lib, "Ws2_32.lib")
-#else
-typedef void* HANDLE;
-typedef unsigned long long SOCKET;
 #endif // _WIN32
 
 #include <string>
 #include <map>
+
+#include "ServerHelper.h"
 
 #pragma region Data_Structures_Definition
 
@@ -27,9 +24,13 @@ struct PostNotificationInfo
 {
 	std::string command_type;
 	std::string notification_name;
+};
+
+struct AwaitNotificationResponseInfo
+{
 	std::string response_command_type;
 	std::string response_property_name;
-	bool should_wait_for_response;
+	SOCKET socket;
 	int timeout;
 };
 
@@ -97,13 +98,19 @@ struct ApplicationCache {
 
 struct DeviceData {
 	DeviceInfo* device_info;
+	struct DeviceServerData* device_server_data;
 	std::map<const char*, HANDLE> services;
 	int sessions;
 	std::map<std::string, ApplicationCache> apps_cache;
 
-	//~DeviceData() {
-	//	//device_info
-	//}
+	void kill_device_server()
+	{
+		if (device_server_data != nullptr)
+		{
+			delete device_server_data;
+			device_server_data = nullptr;
+		}
+	}
 };
 
 struct FileUploadData {

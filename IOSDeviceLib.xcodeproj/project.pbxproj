@@ -20,6 +20,7 @@
 		709A6CD11E435D11006F76C7 /* mac_impl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 709A6CCD1E435D11006F76C7 /* mac_impl.cpp */; };
 		709A6CD21E435D11006F76C7 /* Printing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 709A6CCE1E435D11006F76C7 /* Printing.cpp */; };
 		709A6CD31E435D11006F76C7 /* windows_impl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 709A6CD01E435D11006F76C7 /* windows_impl.cpp */; };
+		70DFE7601E72ACCC000317B3 /* ServerHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70DFE75E1E72ACCC000317B3 /* ServerHelper.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -330,6 +331,8 @@
 		709A6CCE1E435D11006F76C7 /* Printing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Printing.cpp; sourceTree = "<group>"; };
 		709A6CCF1E435D11006F76C7 /* Printing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Printing.h; sourceTree = "<group>"; };
 		709A6CD01E435D11006F76C7 /* windows_impl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = windows_impl.cpp; sourceTree = "<group>"; };
+		70DFE75E1E72ACCC000317B3 /* ServerHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ServerHelper.cpp; sourceTree = "<group>"; };
+		70DFE75F1E72ACCC000317B3 /* ServerHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ServerHelper.h; sourceTree = "<group>"; };
 		70F5F4281E13EE02005196BF /* configuration.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = configuration.xcconfig; path = IOSDeviceLib/configuration.xcconfig; sourceTree = "<group>"; };
 		70F6ADAB1DEEB71300DD4722 /* ios-device-lib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "ios-device-lib"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -350,6 +353,8 @@
 		7038C9EF1DEEDB4C00A3D335 /* IOSDeviceLib */ = {
 			isa = PBXGroup;
 			children = (
+				70DFE75E1E72ACCC000317B3 /* ServerHelper.cpp */,
+				70DFE75F1E72ACCC000317B3 /* ServerHelper.h */,
 				709A6CCB1E435D11006F76C7 /* CommonFunctions.h */,
 				709A6CCC1E435D11006F76C7 /* Constants.h */,
 				709A6CCD1E435D11006F76C7 /* mac_impl.cpp */,
@@ -1158,6 +1163,7 @@
 				7024956E1E4080B8009A6EBF /* FileHelper.cpp in Sources */,
 				7038CB3E1DEEDB4C00A3D335 /* PlistDate.cpp in Sources */,
 				709A6CD31E435D11006F76C7 /* windows_impl.cpp in Sources */,
+				70DFE7601E72ACCC000317B3 /* ServerHelper.cpp in Sources */,
 				7038CB3D1DEEDB4C00A3D335 /* Plist.cpp in Sources */,
 				709A6CD21E435D11006F76C7 /* Printing.cpp in Sources */,
 				7024956F1E4080B8009A6EBF /* GDBHelper.cpp in Sources */,

@@ -32,7 +32,7 @@ declare module IOSDeviceLib {
 		path: string;
 	}
 
-	interface IFileData extends ISource, IDestination{
+	interface IFileData extends ISource, IDestination {
 	}
 
 	interface IFileOperationData extends IAppDevice, IFileData {
@@ -50,13 +50,16 @@ declare module IOSDeviceLib {
 		ddi: string;
 	}
 
-	interface INotifyData extends IDeviceId {
+	interface IPostNotificationData extends IDeviceId {
 		commandType: string;
 		notificationName: string;
-		shouldWaitForResponse: boolean;
-		timeout?: number;
-		responseCommandType?: string;
-		responsePropertyName?: string;
+	}
+
+	interface IAwaitNotificatioNResponseData extends IDeviceId {
+		responseCommandType: string;
+		responsePropertyName: string;
+		socket: number;
+		timeout: number;
 	}
 
 	interface IDeviceResponse extends IDeviceId {
@@ -77,8 +80,11 @@ declare module IOSDeviceLib {
 		response: IApplicationInfo[];
 	}
 
-	interface IDeviceLogData extends IDeviceId {
+	interface IMessage {
 		message: string;
+	}
+
+	interface IDeviceLogData extends IDeviceId, IMessage {
 	}
 
 	interface IDeviceApplication {
@@ -98,6 +104,26 @@ declare module IOSDeviceLib {
 		port: number;
 	}
 
+	interface ISocketData extends IDeviceId {
+		socket: number;
+	}
+
+	interface ISendMessageToSocketData extends ISocketData, IMessage {
+	}
+
+	interface IReceiveMessagesFromSocketData extends ISocketData {
+		callback: SocketMessageHandler;
+		context: any;
+	}
+
+	interface ISocketMessage extends ISocketData, IMessage {
+	}
+
+	interface IConnectToPortResponse extends IDeviceId {
+		host: string;
+		port: number;
+	}
+
 	interface IOSDeviceLib extends NodeJS.EventEmitter {
 		new (onDeviceFound: (found: IDeviceActionInfo) => void, onDeviceLost: (found: IDeviceActionInfo) => void): IOSDeviceLib;
 		install(ipaPath: string, deviceIdentifiers: string[]): Promise<IDeviceResponse>[];
@@ -107,13 +133,16 @@ declare module IOSDeviceLib {
 		download(downloadArray: IFileOperationData[]): Promise<IDeviceResponse>[];
 		read(readArray: IReadOperationData[]): Promise<IDeviceResponse>[];
 		delete(deleteArray: IDeleteFileData[]): Promise<IDeviceResponse>[];
-		notify(notifyArray: INotifyData[]): Promise<IDeviceResponse>[];
+		postNotification(postNotificationArray: IPostNotificationData[]): Promise<IDeviceResponse>[];
+		awaitNotificationResponse(awaitNotificationResponseArray: IAwaitNotificatioNResponseData[]): Promise<IDeviceResponse>[];
 		apps(deviceIdentifiers: string[]): Promise<IDeviceAppInfo>[];
 		start(startArray: IDdiApplicationData[]): Promise<IDeviceResponse>[];
 		stop(stopArray: IDdiApplicationData[]): Promise<IDeviceResponse>[];
 		startDeviceLog(deviceIdentifiers: string[]): void;
-		connectToPort(connectToPortArray: IConnectToPortData[]): Promise<IDeviceResponse>[];
+		connectToPort(connectToPortArray: IConnectToPortData[]): Promise<IConnectToPortResponse>[];
 		dispose(signal?: string): void;
 		on(event: "deviceLogData", listener: (response: IDeviceLogData) => void): this;
 	}
+
+	type SocketMessageHandler = (message: ISocketMessage) => void;
 }

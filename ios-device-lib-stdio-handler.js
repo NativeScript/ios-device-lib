@@ -11,9 +11,10 @@ const Constants = require("./constants");
 const HeaderSize = 4;
 
 class IOSDeviceLibStdioHandler extends EventEmitter {
-	constructor() {
+	constructor(options) {
 		super();
 		this._unfinishedMessage = new Buffer(0);
+		this._showDebugInformation = options.debug;
 	}
 
 	startReadingData() {
@@ -21,6 +22,12 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 		this._chProc.stdout.on("data", (data) => {
 			this._unpackMessages(data);
 		});
+
+		if (this._showDebugInformation) {
+			this._chProc.stderr.on("data", (data) => {
+				console.log("TRACE: ", data && data.toString());
+			});
+		}
 	}
 
 	writeData(data) {
@@ -39,10 +46,10 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 				case Constants.DeviceEventEnum.kDeviceFound:
 					this.emit(Constants.DeviceFoundEventName, message);
 					break;
-				case DeviceEventEnum.kDeviceLost:
+				case Constants.DeviceEventEnum.kDeviceLost:
 					this.emit(Constants.DeviceLostEventName, message);
 					break;
-				case DeviceEventEnum.kDeviceTrusted:
+				case Constants.DeviceEventEnum.kDeviceTrusted:
 					this.emit(Constants.DeviceLostEventName, message);
 					this.emit(Constants.DeviceFoundEventName, message);
 					break;

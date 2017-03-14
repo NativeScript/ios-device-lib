@@ -48,6 +48,9 @@
     <ClCompile Include="Printing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ServerHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="IOSDeviceLib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -882,6 +885,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CommonFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
