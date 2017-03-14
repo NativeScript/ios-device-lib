@@ -11,10 +11,10 @@ const Constants = require("./constants");
 const HeaderSize = 4;
 
 class IOSDeviceLibStdioHandler extends EventEmitter {
-	constructor(showDebugInformation) {
+	constructor(options) {
 		super();
 		this._unfinishedMessage = new Buffer(0);
-		this._showDebugInformation = showDebugInformation;
+		this._showDebugInformation = options.debug;
 	}
 
 	startReadingData() {

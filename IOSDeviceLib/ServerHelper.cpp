@@ -8,7 +8,7 @@ struct sockaddr_in bind_socket(SOCKET socket, const char* host)
 	server_address.sin_family = AF_INET;
 
 #ifdef _WIN32
-	server_address.sin_addr.s_addr = inet_pton(server_address.sin_family, host, (void*)&server_address.sin_addr);
+	inet_pton(server_address.sin_family, host, (void*)&server_address.sin_addr);
 #else
 	server_address.sin_addr.s_addr = inet_addr(host);
 #endif // _WIN32
@@ -18,7 +18,8 @@ struct sockaddr_in bind_socket(SOCKET socket, const char* host)
 	server_address.sin_port = htons(port);
 
 	// If the port is available the bind() will return 0.
-	while (bind(socket, (sockaddr*)&server_address, address_length) != 0)
+	auto bind_result = bind(socket, (sockaddr*)&server_address, address_length);
+	while (bind_result != 0)
 	{
 		++port;
 		server_address.sin_port = htons(port);

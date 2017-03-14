@@ -9,17 +9,14 @@
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
 
 #pragma comment(lib, "Ws2_32.lib")
-#else
-typedef void* HANDLE;
-typedef unsigned long long SOCKET;
 #endif // _WIN32
 
 #include <string>
 #include <map>
+
+#include "ServerHelper.h"
 
 #pragma region Data_Structures_Definition
 

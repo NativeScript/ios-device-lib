@@ -1,8 +1,10 @@
+#include <mutex>
+#include <thread>
+
 #include "SocketHelper.h"
 
 #include "PlistCpp/Plist.hpp"
 #include "PlistCpp/PlistDate.hpp"
-#include "PlistCpp/include/boost/any.hpp"
 
 int send_message(const char* message, SOCKET socket, long long length)
 {
@@ -17,6 +19,11 @@ int send_message(std::string message, SOCKET socket, long long length)
 
 bool should_read_from_socket(SOCKET socket, int timeout)
 {
+	if (timeout < 0)
+	{
+		return true;
+	}
+
 	// The code is stolen from here http://stackoverflow.com/questions/30395258/setting-timeout-to-recv-function
 	fd_set set;
 	struct timeval time_to_wait;
@@ -103,6 +110,8 @@ Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 		}
 		else if (bytes_read < 0)
 		{
+			delete[] buffer;
+			delete[] result;
 			receive_utf16_message_mutex.unlock();
 			return nullptr;
 		}
@@ -184,4 +193,15 @@ LengthEncodedMessage get_message_with_encoded_length(const char* message, long l
 	memcpy(length_encoded_message, &packed_length, packed_length_size);
 	memcpy(length_encoded_message + packed_length_size, message, length);
 	return{ length_encoded_message, message_len };
+}
+
+void close_socket(SOCKET socket) {
+	// We need closesocket for Windows because the socket
+	// is a handle to kernel object instead of *nix file descriptor
+	// http://stackoverflow.com/questions/35441815/are-close-and-closesocket-interchangable
+#ifdef _WIN32
+	closesocket(socket);
+#else
+	close(socket);
+#endif // _WIN32
 }

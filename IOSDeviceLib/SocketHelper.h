@@ -6,18 +6,19 @@
 #include <ws2tcpip.h>
 
 #pragma comment(lib, "Ws2_32.lib")
-
+#else
+typedef void* HANDLE;
+typedef unsigned long long SOCKET;
 #endif
 
 #ifndef _WIN32
 #include <sys/socket.h>
+#include <stdlib.h>
 #endif
 
-#include <mutex>
-#include <thread>
 #include <map>
+#include <functional>
 #include "PlistCpp/include/boost/any.hpp"
-#include "Declarations.h"
 
 struct LengthEncodedMessage {
 	char *message;
@@ -35,7 +36,7 @@ struct Utf16Message {
 
 	~Utf16Message()
 	{
-		free(message);
+		delete[] message;
 	}
 };
 
@@ -48,3 +49,4 @@ std::string receive_message_raw(SOCKET socket, int size = 1000);
 
 typedef std::function<void(SOCKET)> SocketClosedCallback;
 void proxy_socket_io(SOCKET first, SOCKET second, SocketClosedCallback first_socket_closed_callback, SocketClosedCallback second_socket_closed_callback);
+void close_socket(SOCKET socket);

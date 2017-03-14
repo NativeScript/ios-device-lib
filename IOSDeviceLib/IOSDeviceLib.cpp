@@ -3,6 +3,8 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <mutex>
+#include <thread>
 #include <memory>
 #include <algorithm>
 #include <sys/stat.h>
@@ -12,7 +14,6 @@
 #include "PlistCpp/PlistDate.hpp"
 #include "PlistCpp/include/boost/any.hpp"
 #include "FileHelper.h"
-#include "SocketHelper.h"
 #include "StringHelper.h"
 #include "Declarations.h"
 #include "GDBHelper.h"
@@ -20,10 +21,6 @@
 #include "Printing.h"
 #include "CommonFunctions.h"
 #include "ServerHelper.h"
-
-#ifndef _WIN32
-#include <sys/socket.h>
-#endif
 
 #ifdef _WIN32
 #pragma region Dll_Variable_Definitions
@@ -1246,7 +1243,6 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 		DeviceServerData* server_socket_data = create_server(device_socket, kLocalhostAddress);
 		if (server_socket_data == nullptr)
 		{
-			delete server_socket_data;
 			print_error("Failed to start the proxy server between the Chrome Dev Tools and the iOS device.", device_identifier, method_id);
 			return;
 		}
@@ -1257,7 +1253,7 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 		// When we receive a client connection we will create a client socket.
 		// Each message received on the client socket will be sent to the device socket.
 		// Each message from the device socket will be sent to the client socket.
-		struct sockaddr_in server_address = server_socket_data->server_address;
+		sockaddr_in server_address = server_socket_data->server_address;
 		unsigned short port = ntohs(server_address.sin_port);
 		socklen_t address_length = sizeof(server_address);
 		
@@ -1270,7 +1266,7 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 		// Proxy the messages from the client socket to the device socket
 		// and from the device socket to the client socket.
 		proxy_socket_io(client_socket, device_socket, [](SOCKET client_fd) {
-			close(client_fd);
+			close_socket(client_fd);
 		}, [&](SOCKET device_socket) {
 			device.kill_device_server();
 		});
@@ -1421,7 +1417,7 @@ int main()
 					std::string device_identifier = arg.value(kDeviceId, "");
 					std::string response_command_type = arg.value(kResponseCommandType, "");
 					std::string response_key_name = arg.value(kResponsePropertyName, "");
-					SOCKET socket = arg.value(kSocket, -1);
+					SOCKET socket = arg.value(kSocket, 0);
 					int timeout = arg.value(kTimeout, -1);
 
 					AwaitNotificationResponseInfo await_notification_response_info({ response_command_type, response_key_name, socket, timeout });

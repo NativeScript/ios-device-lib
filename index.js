@@ -32,7 +32,7 @@ class IOSDeviceLib extends EventEmitter {
 	constructor(onDeviceFound, onDeviceLost, options) {
 		super();
 		options = options || {};
-		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler(options.debug);
+		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler(options);
 		this._iosDeviceLibStdioHandler.startReadingData();
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceFoundEventName, onDeviceFound);
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceLostEventName, onDeviceLost);
