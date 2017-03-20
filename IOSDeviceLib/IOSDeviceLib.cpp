@@ -531,7 +531,11 @@ void install_application(std::string install_path, std::string device_identifier
 	}
 	windows_path_to_unix(install_path);
 #endif
-	start_session(device_identifier);
+	int session_result = start_session(device_identifier);
+	if (session_result) {
+		print_error("Could not start device session", device_identifier, method_id, session_result);
+		return;
+	}
 
 	CFStringRef path = create_CFString(install_path.c_str());
 	CFURLRef local_app_url =
@@ -562,7 +566,12 @@ void install_application(std::string install_path, std::string device_identifier
 		return;
 	}
 
-	start_session(device_identifier);
+	session_result = start_session(device_identifier);
+	if (session_result) {
+		print_error("Could not start device session", device_identifier, method_id, session_result);
+		return;
+	}
+
 	unsigned install_result = AMDeviceSecureInstallApplication(0, devices[device_identifier].device_info, local_app_url, options, NULL, 0);
 	CFRelease(cf_package_type);
 	CFRelease(cf_developer);
