@@ -555,13 +555,14 @@ void install_application(std::string install_path, std::string device_identifier
 	CFDictionaryRef options = CFDictionaryCreate(NULL, keys_arr, values_arr, 1, NULL, NULL);
 
 	unsigned transfer_result = AMDeviceSecureTransferPath(0, devices[device_identifier].device_info, local_app_url, options, NULL, 0);
+	stop_session(device_identifier);
 	if (transfer_result)
 	{
-		stop_session(device_identifier);
 		print_error("Could not transfer application", device_identifier, method_id, transfer_result);
 		return;
 	}
 
+	start_session(device_identifier);
 	unsigned install_result = AMDeviceSecureInstallApplication(0, devices[device_identifier].device_info, local_app_url, options, NULL, 0);
 	CFRelease(cf_package_type);
 	CFRelease(cf_developer);
