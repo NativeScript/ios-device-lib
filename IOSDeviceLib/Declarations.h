@@ -162,6 +162,7 @@ typedef unsigned(__cdecl *afc_fileref_write)(afc_connection*, afc_file_ref, cons
 typedef unsigned(__cdecl *afc_fileref_close)(afc_connection*, afc_file_ref);
 typedef unsigned(__cdecl *device_start_house_arrest)(const DeviceInfo*, CFStringRef, void*, HANDLE*, unsigned int*);
 typedef unsigned(__cdecl *device_lookup_applications)(const DeviceInfo*, CFDictionaryRef, CFDictionaryRef*);
+typedef int(__cdecl *usb_mux_connect_by_port)(int, int, long long*);
 
 #endif // _WIN32
 #pragma endregion Dll_Type_Definitions
@@ -187,6 +188,10 @@ typedef unsigned(__cdecl *device_lookup_applications)(const DeviceInfo*, CFDicti
 #define AMDeviceSecureInstallApplication GET_IF_EXISTS(__AMDeviceSecureInstallApplication, device_secure_operation_with_path, mobile_device_dll, "AMDeviceSecureInstallApplication")
 #define AMDeviceStartHouseArrestService GET_IF_EXISTS(__AMDeviceStartHouseArrestService, device_start_house_arrest, mobile_device_dll, "AMDeviceStartHouseArrestService")
 #define AMDeviceLookupApplications GET_IF_EXISTS(__AMDeviceLookupApplications, device_lookup_applications, mobile_device_dll, "AMDeviceLookupApplications")
+
+#define AMDeviceGetConnectionID GET_IF_EXISTS(__AMDeviceGetConnectionID, device_connection_operation, mobile_device_dll, "AMDeviceGetConnectionID")
+#define AMDeviceGetInterfaceType GET_IF_EXISTS(__AMDeviceGetInterfaceType, device_connection_operation, mobile_device_dll, "AMDeviceGetInterfaceType")
+#define USBMuxConnectByPort GET_IF_EXISTS(__USBMuxConnectByPort, usb_mux_connect_by_port, mobile_device_dll, "USBMuxConnectByPort")
 
 #define CFStringGetCStringPtr GET_IF_EXISTS(__CFStringGetCStringPtr, cfstring_get_c_string_ptr, core_foundation_dll, "CFStringGetCStringPtr")
 #define CFStringGetCString GET_IF_EXISTS(__CFStringGetCString, cfstring_get_c_string, core_foundation_dll, "CFStringGetCString")

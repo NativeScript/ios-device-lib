@@ -17,11 +17,11 @@ int send_message(std::string message, SOCKET socket, long long length)
 	return send_message(message.c_str(), socket, length);
 }
 
-bool should_read_from_socket(SOCKET socket, int timeout)
+int get_socket_state(SOCKET socket, int timeout)
 {
 	if (timeout < 0)
 	{
-		return true;
+		return 1;
 	}
 
 	// The code is stolen from here http://stackoverflow.com/questions/30395258/setting-timeout-to-recv-function
@@ -42,7 +42,7 @@ bool should_read_from_socket(SOCKET socket, int timeout)
 std::map<std::string, boost::any> receive_message(SOCKET socket, int timeout)
 {
 
-	if (!should_read_from_socket(socket, timeout))
+	if (get_socket_state(socket, timeout) <= 0)
 	{
 		return std::map<std::string, boost::any>();
 	}
@@ -64,34 +64,50 @@ std::map<std::string, boost::any> receive_message(SOCKET socket)
 	return dict;
 }
 
-std::mutex receive_utf16_message_mutex;
+Utf16Message* create_utf16_message(unsigned char *message, long long length)
+{
+	Utf16Message* result = new Utf16Message();
+	result->length = length;
+	result->message = message;
+	return result;
+}
+
 Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 {
-	receive_utf16_message_mutex.lock();
-	// We do not want to stay at recv forever.
-	int should_read_from_socket_result = should_read_from_socket(fd, 1);
-	if (should_read_from_socket_result == 0)
-	{
-		Utf16Message* empty_result = new Utf16Message();
-		empty_result->message = new unsigned char[0];
-		empty_result->length = 0;
-		receive_utf16_message_mutex.unlock();
-		return empty_result;
-	}
-	else if (should_read_from_socket_result == -1)
-	{
-		receive_utf16_message_mutex.unlock();
-		return nullptr;
-	}
-
-	int bytes_read;
 	long long final_length = 0;
+	int bytes_read;
+
 	// We need to create new unsigned char[] here because if we don't
 	// the memcpy will fail with EXC_BAD_ACCESS
 	unsigned char *result = new unsigned char[0];
 
 	do
 	{
+		// We do not want to stay at recv forever.
+		// Also we need to check if there are messages before each recv because
+		// the message can have length 2000 and we will try to call recv 3 times.
+		// We will stay forever at the 3d one because there will be no message in the socket.
+		int socket_state = get_socket_state(fd, 1);
+
+		// Socket is not closed but there are no messages yet.
+		if (socket_state == 0)
+		{
+			return create_utf16_message(result, final_length);
+		}
+		else if (socket_state < 0)
+		{
+			// Socket is closed.
+			if (final_length > 0)
+			{
+				// Return the last received message before the socket was closed.
+				return create_utf16_message(result, final_length);
+			}
+			else
+			{
+				return nullptr;
+			}
+		}
+
 		unsigned char *buffer = new unsigned char[size];
 		bytes_read = recv(fd, (char*)buffer, size, 0);
 
@@ -112,20 +128,13 @@ Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 		{
 			delete[] buffer;
 			delete[] result;
-			receive_utf16_message_mutex.unlock();
 			return nullptr;
 		}
 
 		delete[] buffer;
 	} while (bytes_read == size);
 
-	Utf16Message* utf16_message = new Utf16Message();
-	utf16_message->message = result;
-	utf16_message->length = final_length;
-
-	receive_utf16_message_mutex.unlock();
-
-	return utf16_message;
+	return create_utf16_message(result, final_length);
 }
 
 void proxy_socket_messages(SOCKET first, SOCKET second)
