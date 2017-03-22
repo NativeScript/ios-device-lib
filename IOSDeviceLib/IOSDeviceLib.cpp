@@ -86,11 +86,6 @@ std::string get_dirname(std::string& path)
 	return path.substr(0, found);
 }
 
-void windows_path_to_unix(std::string& path)
-{
-	replace_all(path, "\\", "/");
-}
-
 template<typename T> std::string windows_path_to_unix(T& path)
 {
 	std::string path_str(path);
@@ -529,14 +524,14 @@ void install_application(std::string install_path, std::string device_identifier
 	{
 		install_path = kFilePrefix + install_path;
 	}
-	windows_path_to_unix(install_path);
+	install_path = windows_path_to_unix(install_path);
+	install_path = url_encode_without_forward_slash_and_colon(install_path);
 #endif
 	int session_result = start_session(device_identifier);
 	if (session_result) {
 		print_error("Could not start device session", device_identifier, method_id, session_result);
 		return;
 	}
-
 	CFStringRef path = create_CFString(install_path.c_str());
 	CFURLRef local_app_url =
 #ifdef _WIN32

@@ -64,3 +64,26 @@ void replace_all(std::string& str, const std::string& from, const std::string& t
         start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
     }
 }
+
+std::string url_encode_without_forward_slash_and_colon(const std::string &value) {
+	std::ostringstream escaped;
+	escaped.fill('0');
+	escaped << std::hex;
+
+	for (std::string::const_iterator i = value.begin(), n = value.end(); i != n; ++i) {
+		std::string::value_type c = (*i);
+
+		// Keep alphanumeric and other accepted characters intact
+		// NB! Do not encode / and : because they're part of the file:/// prefix
+		if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~' || c == '/' || c == ':') {
+			escaped << c;
+			continue;
+		}
+
+		escaped << std::uppercase;
+		escaped << '%' << std::setw(2) << int((unsigned char)c);
+		escaped << std::nouppercase;
+	}
+
+	return escaped.str();
+}
