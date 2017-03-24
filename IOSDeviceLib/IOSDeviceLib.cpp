@@ -1175,7 +1175,7 @@ void stop_app(std::string device_identifier, std::string application_identifier,
 		else
 			print_error("Could not stop application", device_identifier, method_id, kApplicationsCustomError);
 
-		detach_connection((SOCKET)gdb);
+		detach_connection((SOCKET)gdb, application_identifier, &devices[device_identifier]);
 	}
 	else
 	{
@@ -1211,8 +1211,6 @@ void start_app(std::string device_identifier, std::string application_identifier
 			print(json({ { kResponse, "Successfully started application" },{ kId, method_id },{ kDeviceId, device_identifier } }));
 		else
 			print_error("Could not start application", device_identifier, method_id, kApplicationsCustomError);
-
-		detach_connection((SOCKET)gdb);
 	}
 	else
 	{
@@ -1280,7 +1278,7 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 		// Proxy the messages from the client socket to the device socket
 		// and from the device socket to the client socket.
 		proxy_socket_io(device_socket, client_socket, [](SOCKET client_fd) {
-			closesocket(client_fd);
+			close_socket(client_fd);
 		}, [=](SOCKET d_fd) {
 			devices[device_identifier].kill_device_server();
 		});

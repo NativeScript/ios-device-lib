@@ -2,6 +2,7 @@
 #include <thread>
 
 #include "SocketHelper.h"
+#include "Constants.h"
 
 #include "PlistCpp/Plist.hpp"
 #include "PlistCpp/PlistDate.hpp"
@@ -42,7 +43,7 @@ int get_socket_state(SOCKET socket, int timeout)
 std::map<std::string, boost::any> receive_message(SOCKET socket, int timeout)
 {
 
-	if (get_socket_state(socket, timeout) <= 0)
+	if (get_socket_state(socket, timeout) <= kSocketNoMessages)
 	{
 		return std::map<std::string, boost::any>();
 	}
@@ -90,11 +91,11 @@ Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 		int socket_state = get_socket_state(fd, 1);
 
 		// Socket is not closed but there are no messages yet.
-		if (socket_state == 0)
+		if (socket_state == kSocketNoMessages)
 		{
 			return create_utf16_message(result, final_length);
 		}
-		else if (socket_state < 0)
+		else if (socket_state <= kSocketClosed)
 		{
 			// Socket is closed.
 			if (final_length > 0)
@@ -178,14 +179,17 @@ std::string receive_message_raw(SOCKET socket, int size)
 {
 	int bytes_read;
 	std::string result = "";
-	do
+	if (get_socket_state(socket, 1) == kSocketHasMessages)
 	{
-		char *buffer = new char[size];
-		bytes_read = recv(socket, buffer, size, 0);
-		if (bytes_read > 0)
-			result += std::string(buffer, bytes_read);
-		delete[] buffer;
-	} while (bytes_read == size);
+		do
+		{
+			char *buffer = new char[size];
+			bytes_read = recv(socket, buffer, size, 0);
+			if (bytes_read > 0)
+				result += std::string(buffer, bytes_read);
+			delete[] buffer;
+		} while (bytes_read == size);
+	}
 
 	return result;
 }
