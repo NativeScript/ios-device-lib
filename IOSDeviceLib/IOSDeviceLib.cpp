@@ -44,6 +44,9 @@ device_secure_operation_with_path __AMDeviceSecureTransferPath;
 device_secure_operation_with_path __AMDeviceSecureInstallApplication;
 device_start_house_arrest __AMDeviceStartHouseArrestService;
 device_lookup_applications __AMDeviceLookupApplications;
+usb_mux_connect_by_port __USBMuxConnectByPort;
+device_connection_operation __AMDeviceGetConnectionID;
+device_connection_operation __AMDeviceGetInterfaceType;
 
 cfstring_get_c_string_ptr __CFStringGetCStringPtr;
 cfstring_get_c_string __CFStringGetCString;
@@ -1167,7 +1170,7 @@ void stop_app(std::string device_identifier, std::string application_identifier,
 		else
 			print_error("Could not stop application", device_identifier, method_id, kApplicationsCustomError);
 
-		detach_connection((SOCKET)gdb);
+		detach_connection((SOCKET)gdb, application_identifier, &devices[device_identifier]);
 	}
 	else
 	{
@@ -1203,8 +1206,6 @@ void start_app(std::string device_identifier, std::string application_identifier
 			print(json({ { kResponse, "Successfully started application" },{ kId, method_id },{ kDeviceId, device_identifier } }));
 		else
 			print_error("Could not start application", device_identifier, method_id, kApplicationsCustomError);
-
-		detach_connection((SOCKET)gdb);
 	}
 	else
 	{
@@ -1214,18 +1215,19 @@ void start_app(std::string device_identifier, std::string application_identifier
 
 void connect_to_port(std::string device_identifier, int port, std::string method_id)
 {
-#ifdef _WIN32
-	print_error("This functionality works only on OSX.", device_identifier, method_id);
-#else
-	DeviceData device = devices[device_identifier];
-
-	if (device.device_server_data != nullptr)
+	if (!devices.count(device_identifier))
 	{
-		// Dispose the old connection.
-		device.kill_device_server();
+		print_error("Device not found.", device_identifier, method_id);
+		return;
 	}
 
-	DeviceInfo* device_info = device.device_info;
+	if (devices[device_identifier].device_server_data != nullptr)
+	{
+		// Dispose the old connection.
+		devices[device_identifier].kill_device_server();
+	}
+
+	DeviceInfo* device_info = devices[device_identifier].device_info;
 
 	int interface_type = AMDeviceGetInterfaceType(device_info);
 
@@ -1236,8 +1238,8 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 	}
 
 	int connection_id = AMDeviceGetConnectionID(device_info);
-	int device_socket;
-	int usb_result = USBMuxConnectByPort(connection_id, HTONS(port), &device_socket);
+	long long device_socket;
+	int usb_result = USBMuxConnectByPort(connection_id, htons(port), &device_socket);
 
 	if (device_socket < 0)
 	{
@@ -1252,7 +1254,7 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 			return;
 		}
 
-		device.device_server_data = server_socket_data;
+		devices[device_identifier].device_server_data = server_socket_data;
 		// We can use the device socket which is returned from USBMuxConnectByPort only in the C++ code.
 		// That's why we need to create a server which will serve to expose the socket.
 		// When we receive a client connection we will create a client socket.
@@ -1270,13 +1272,12 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 
 		// Proxy the messages from the client socket to the device socket
 		// and from the device socket to the client socket.
-		proxy_socket_io(client_socket, device_socket, [](SOCKET client_fd) {
+		proxy_socket_io(device_socket, client_socket, [](SOCKET client_fd) {
 			close_socket(client_fd);
-		}, [&](SOCKET device_socket) {
-			device.kill_device_server();
+		}, [=](SOCKET d_fd) {
+			devices[device_identifier].kill_device_server();
 		});
 	}
-#endif // _WIN32
 }
 
 int main()

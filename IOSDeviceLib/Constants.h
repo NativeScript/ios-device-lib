@@ -7,6 +7,10 @@ static const unsigned kAFCCustomError = 4;
 static const unsigned kApplicationsCustomError = 5;
 static const unsigned kUnexpectedError = 13;
 
+static const int kSocketHasMessages = 1;
+static const int kSocketNoMessages = 0;
+static const int kSocketClosed = -1;
+
 static const unsigned kADNCIMessageConnected = 1;
 static const unsigned kADNCIMessageDisconnected = 2;
 static const unsigned kADNCIMessageUnknown = 3;

@@ -1,4 +1,5 @@
 #include "GDBHelper.h"
+#include "Constants.h"
 #include "StringHelper.h"
 #include <sstream>
 #include <iomanip>
@@ -123,8 +124,10 @@ bool stop_application(std::string & executable, SOCKET socket, std::string& appl
 	return true;
 }
 
-void detach_connection(SOCKET socket)
+void detach_connection(SOCKET socket, std::string& application_identifier, DeviceData* device_data)
 {
-	///*gdb_send_message("D", socket);
-	//std::string answer = receive_message_raw(socket);*/
+	gdb_send_message("D", socket);
+	std::string answer = receive_message_raw(socket);
+	device_data->apps_cache[application_identifier].has_initialized_gdb = false;
+	device_data->services.erase(kDebugServer);
 }
