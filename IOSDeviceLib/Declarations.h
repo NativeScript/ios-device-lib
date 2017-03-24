@@ -259,7 +259,7 @@ extern "C"
 	unsigned AFCFileRefRead(afc_connection*, afc_file_ref, void*, size_t*);
 	unsigned AFCFileRefWrite(afc_connection*, afc_file_ref, const void*, size_t);
 	unsigned AFCFileRefClose(afc_connection*, afc_file_ref);
-    int USBMuxConnectByPort(int, int, int*);
+	unsigned USBMuxConnectByPort(int, int, long long*);
 }
 
 #endif // !_WIN32
