@@ -1,3 +1,5 @@
+"use strict";
+
 const stream = require("stream");
 const bufferpack = require("bufferpack");
 
