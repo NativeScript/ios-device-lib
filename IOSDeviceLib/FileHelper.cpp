@@ -29,9 +29,19 @@ FileInfo get_file_info(std::string& path, bool get_contents)
 
 			std::vector<char> buffer(size);
 			file.read(buffer.data(), size);
-			result.contents = buffer;
+            if (buffer.size() == 0 && size == 0)
+            {
+                // We will get here if the file exists and it is empty.
+                buffer.push_back(""[0]);
+            }
+
+            result.contents = buffer;
 		}
 	}
+    else
+    {
+        return {-1};
+    }
 
 	return result;
 }

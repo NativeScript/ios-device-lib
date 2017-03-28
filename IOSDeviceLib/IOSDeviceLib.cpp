@@ -739,7 +739,7 @@ void upload_file(std::string device_identifier, const char *application_identifi
 				std::string destination = current_file_data.destination;
 				FileInfo file_info = get_file_info(source, true);
 
-				if (file_info.size)
+				if (file_info.size >= 0)
 				{
 					std::string dir_name = get_dirname(destination);
 					if (ensure_device_path_exists(dir_name, afc_conn_p))
