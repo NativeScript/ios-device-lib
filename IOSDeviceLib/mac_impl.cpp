@@ -34,7 +34,7 @@ std::string get_developer_disk_image_directory_path(std::string& device_identifi
 	}
 
 	std::string dev_dir_path = exec("xcode-select -print-path");
-	dev_dir_path = trim_end(dev_dir_path) + "Platforms/iPhoneOS.platform/DeviceSupport";
+	dev_dir_path = trim_end(dev_dir_path) + "/Platforms/iPhoneOS.platform/DeviceSupport";
 	std::string build_version = get_device_property_value(device_identifier, "BuildVersion");
 	std::string product_version = get_device_property_value(device_identifier, kProductVersion);
 	std::vector<std::string> product_version_parts = split(product_version, '.');
