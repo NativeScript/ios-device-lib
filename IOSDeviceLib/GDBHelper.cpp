@@ -104,7 +104,8 @@ bool stop_application(std::string & executable, SOCKET socket, std::string& appl
 		// If we get infromation about the thread then apparently it is now safe to send the kill command
 		// Thread information contains data that I cannot decipher - looks like this:
 		// $T11thread:42202;00:0540001000000000;01:0608000700000000;02:0000000000000000;03:000c000000000000;04:0321000000000000;05:ffffffff00000000;06:0000000000000000;07:0100000000000000;08:bffbffff00000000;09:0000000700000000;0a:0001000700000000;0b:c0bdf0ff00000000;0c:034e0d00004d0d00;0d:0000000000000000;0e:004e0d00004e0d00;0f:0000000000000000;10:e1ffffffffffffff;11:20a59e8201000000;12:0000000000000000;13:0000000000000000;14:ffffffff00000000;15:0321000000000000;16:000c000000000000;17:08a0d66f01000000;18:0608000700000000;19:0000000000000000;1a:0608000700000000;1b:000c000000000000;1c:0100000000000000;1d:009fd66f01000000;1e:dcffab8101000000;1f:b09ed66f01000000;20:6c01ac8101000000;21:00000060;metype:5;mecount:2;medata:10003;medata:11;memory:0x16fd69f00=609fd66f01000000ecdcab8201000000;memory:0x16fd69f60=70acd66f0100000008b9ab8201000000;#00
-		if (contains(answer, "thread"))
+        // If the application is not running the gdb will return $OK#00 instead of the above message.
+		if (contains(answer, "thread") || contains(answer, "$OK#"))
 		{
 			can_send_kill = true;
 			break;
