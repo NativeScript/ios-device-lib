@@ -18,11 +18,12 @@ struct sockaddr_in bind_socket(SOCKET socket, const char* host)
 	server_address.sin_port = htons(port);
 
 	// If the port is available the bind() will return 0.
-	auto bind_result = bind(socket, (sockaddr*)&server_address, address_length);
+	int bind_result = bind(socket, (sockaddr*)&server_address, address_length);
 	while (bind_result != 0)
 	{
 		++port;
 		server_address.sin_port = htons(port);
+		bind_result = bind(socket, (sockaddr*)&server_address, address_length);
 	}
 
 	return server_address;
