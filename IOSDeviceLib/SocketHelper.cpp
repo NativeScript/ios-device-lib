@@ -40,19 +40,10 @@ int get_socket_state(SOCKET socket, int timeout)
 	return rv;
 }
 
-std::map<std::string, boost::any> receive_message(SOCKET socket, int timeout)
+std::mutex receive_message_mutex;
+std::map<std::string, boost::any> receive_message_core(SOCKET socket)
 {
-
-	if (get_socket_state(socket, timeout) <= kSocketNoMessages)
-	{
-		return std::map<std::string, boost::any>();
-	}
-
-	return receive_message(socket);
-}
-
-std::map<std::string, boost::any> receive_message(SOCKET socket)
-{
+	receive_message_mutex.lock();
 	std::map<std::string, boost::any> dict;
 	char *buffer = new char[4];
 	int bytes_read = recv(socket, buffer, 4, 0);
@@ -62,7 +53,19 @@ std::map<std::string, boost::any> receive_message(SOCKET socket)
 	bytes_read = recv(socket, buffer, res, 0);
 	Plist::readPlist(buffer, res, dict);
 	delete[] buffer;
+	receive_message_mutex.unlock();
 	return dict;
+}
+
+std::map<std::string, boost::any> receive_message(SOCKET socket, int timeout)
+{
+
+	if (get_socket_state(socket, timeout) <= kSocketNoMessages)
+	{
+		return std::map<std::string, boost::any>();
+	}
+
+	return receive_message_core(socket);
 }
 
 Utf16Message* create_utf16_message(unsigned char *message, long long length)
