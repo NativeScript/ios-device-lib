@@ -43,8 +43,7 @@ struct Utf16Message {
 LengthEncodedMessage get_message_with_encoded_length(const char* message, long long length = -1);
 int send_message(const char* message, SOCKET socket, long long length = -1);
 int send_message(std::string message, SOCKET socket, long long length = -1);
-std::map<std::string, boost::any> receive_message(SOCKET socket, int timeout);
-std::map<std::string, boost::any> receive_message(SOCKET socket);
+std::map<std::string, boost::any> receive_message(SOCKET socket, int timeout = 1);
 std::string receive_message_raw(SOCKET socket, int size = 1000);
 
 typedef std::function<void(SOCKET)> SocketClosedCallback;
