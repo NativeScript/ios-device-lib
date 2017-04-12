@@ -28,12 +28,11 @@ int gdb_send_message(std::string message, SOCKET socket, long long length)
 	return send_message(get_gdb_message(message), socket, length);
 }
 
-bool await_response(std::string message, SOCKET socket, std::string expected_response = kGDBOk)
+bool await_response(std::string message, SOCKET socket)
 {
 	gdb_send_message(message, socket);
 	std::string answer = receive_message_raw(socket);
-	bool matches_expected_response = contains(answer, expected_response) || contains(answer, kGDBOk);
-	return matches_expected_response && !starts_with(answer, kGDBErrorPrefix);
+	return !starts_with(answer, kGDBErrorPrefix);
 }
 
 bool init(std::string& executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache)
@@ -43,7 +42,7 @@ bool init(std::string& executable, SOCKET socket, std::string& application_ident
 	// Noramlly GDB requires + or - acknowledgments after every message
 	// This however is only valuable if the communication channel is insecure (packets are lost - e.g. UDP)
 	// In our case this would only cause overhead so we disable it using QStartNoAckMode
-	RETURN_IF_FALSE(await_response("QStartNoAckMode", socket, "+"));
+	RETURN_IF_FALSE(await_response("QStartNoAckMode", socket));
 	send_message("+", socket);
 	// Set QEnvironmentHexEncoded because the arguments we pass around (e.g. path to executable) may contain non-printable characters
 	RETURN_IF_FALSE(await_response("QEnvironmentHexEncoded:", socket));
