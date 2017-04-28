@@ -81,7 +81,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)\IOSDeviceLib\PlistCpp\include;$(IncludePath)</IncludePath>
-    <OutDir>$(SolutionDir)bin\win32\$(PlatformTarget)</OutDir>
+    <OutDir>$(SolutionDir)bin\win32\ia32</OutDir>
     <TargetName>ios-device-lib</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
