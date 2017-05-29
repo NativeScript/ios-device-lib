@@ -198,16 +198,16 @@ void cleanup_file_resources(const std::string& device_identifier, const std::str
 		return;
 	}
 
-	afc_connection* afc_connection_to_close = nullptr;
 	if (devices[device_identifier].apps_cache[application_identifier].afc_connection)
 	{
-		afc_connection_to_close = devices[device_identifier].apps_cache[application_identifier].afc_connection;
-	}
-
-	if (afc_connection_to_close)
-	{
+		afc_connection* afc_connection_to_close = devices[device_identifier].apps_cache[application_identifier].afc_connection;
 		AFCConnectionClose(afc_connection_to_close);
 		devices[device_identifier].apps_cache.erase(application_identifier);
+	}
+
+	if (devices[device_identifier].services.count(kHouseArrest))
+	{
+		devices[device_identifier].services.erase(kHouseArrest);
 	}
 }
 
@@ -355,7 +355,7 @@ HANDLE start_service(std::string device_identifier, const char* service_name, st
 	{
 		if (should_log_error)
 			print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
-		
+
 		start_service_mutex.unlock();
 		return NULL;
 	}
@@ -378,7 +378,7 @@ HANDLE start_service(std::string device_identifier, const char* service_name, st
 		message += service_name;
 		if (should_log_error)
 			print_error(message.c_str(), device_identifier, method_id, result);
-			
+
 		start_service_mutex.unlock();
 		return NULL;
 	}
@@ -1073,7 +1073,7 @@ void post_notification(std::string device_identifier, PostNotificationInfo post_
 							"<string></string>"
 						"</dict>"
 						"</plist>";
-	
+
 	SOCKET socket = (SOCKET)handle;
 	send_message(xml_command.str().c_str(), socket);
 	print(json({ { kResponse, socket }, { kId, method_id }, { kDeviceId, device_identifier } }));
@@ -1263,7 +1263,7 @@ void connect_to_port(std::string device_identifier, int port, std::string method
 		sockaddr_in server_address = server_socket_data->server_address;
 		unsigned short port = ntohs(server_address.sin_port);
 		socklen_t address_length = sizeof(server_address);
-		
+
 		// Return the host address and the port to the client.
 		print(json({ { kHost, kLocalhostAddress }, { kPort, port }, { kId, method_id }, { kDeviceId, device_identifier } }));
 
