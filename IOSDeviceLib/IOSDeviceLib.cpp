@@ -920,7 +920,7 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	{
 		std::map<std::string, boost::any> dict = receive_message((SOCKET)socket);
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(dict.count(kErrorKey), boost::any_cast<std::string>(dict[kErrorKey]).c_str(), device_identifier, method_id);
-		if (dict.count(kStatusKey) && has_complete_status(dict))
+		if (dict.empty() || (dict.count(kStatusKey) && has_complete_status(dict)))
 		{
 			break;
 		}

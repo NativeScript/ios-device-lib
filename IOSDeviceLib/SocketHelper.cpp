@@ -47,11 +47,18 @@ std::map<std::string, boost::any> receive_message_core(SOCKET socket)
 	std::map<std::string, boost::any> dict;
 	char *buffer = new char[4];
 	int bytes_read = recv(socket, buffer, 4, 0);
-	unsigned long res = ntohl(*((unsigned long*)buffer));
-	delete[] buffer;
-	buffer = new char[res];
-	bytes_read = recv(socket, buffer, res, 0);
-	Plist::readPlist(buffer, res, dict);
+	if (bytes_read > 0)
+	{
+		unsigned long res = ntohl(*((unsigned long*)buffer));
+		delete[] buffer;
+		buffer = new char[res];
+		bytes_read = recv(socket, buffer, res, 0);
+		if (bytes_read > 0)
+		{
+			Plist::readPlist(buffer, res, dict);
+		}
+	}
+
 	delete[] buffer;
 	receive_message_mutex.unlock();
 	return dict;
