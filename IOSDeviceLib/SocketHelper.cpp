@@ -122,13 +122,6 @@ Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 			}
 		}
 
-
-		if (bytes_read == 0)
-		{
-			delete[] buffer;
-			return nullptr;
-		}
-
 		bytes_read = recv(fd, (char*)buffer, size, 0);
 
 		if (bytes_read > 0)
