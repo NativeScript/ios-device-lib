@@ -99,14 +99,17 @@ Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 		// the message can have length 2000 and we will try to call recv 3 times.
 		// We will stay forever at the 3d one because there will be no message in the socket.
 		int socket_state = get_socket_state(fd, 1);
+		unsigned char *buffer = new unsigned char[size];
 
-		// Socket is not closed but there are no messages yet.
-		if (socket_state == kSocketNoMessages)
+		// If the MSG_PEEK flag is set the recv function won't read the data from the socket.
+		// It will just return the size of the message in the socket.
+		// If the size is 0 this means that the socket is closed.
+		// This call is BLOCKING.
+		bytes_read = recv(fd, (char*)buffer, size, MSG_PEEK);
+
+		if (socket_state <= kSocketClosed || bytes_read <= 0)
 		{
-			return create_utf16_message(result, final_length);
-		}
-		else if (socket_state <= kSocketClosed)
-		{
+			delete[] buffer;
 			// Socket is closed.
 			if (final_length > 0)
 			{
@@ -119,7 +122,6 @@ Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 			}
 		}
 
-		unsigned char *buffer = new unsigned char[size];
 		bytes_read = recv(fd, (char*)buffer, size, 0);
 
 		if (bytes_read > 0)
