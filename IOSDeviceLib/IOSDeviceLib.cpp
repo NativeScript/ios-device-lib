@@ -33,6 +33,7 @@ device_copy_device_identifier __AMDeviceCopyDeviceIdentifier;
 device_copy_value __AMDeviceCopyValue;
 device_start_service __AMDeviceStartService;
 device_uninstall_application __AMDeviceUninstallApplication;
+device_secure_operation_with_bundle_id __AMDeviceSecureUninstallApplication;
 device_connection_operation __AMDeviceStartSession;
 device_connection_operation __AMDeviceStopSession;
 device_connection_operation __AMDeviceConnect;
@@ -492,14 +493,8 @@ void uninstall_application(std::string application_identifier, std::string devic
 		return;
 	}
 
-	HANDLE socket = start_service(device_identifier, kInstallationProxy, method_id);
-	if (!socket)
-	{
-		return;
-	}
-
 	CFStringRef appid_cfstring = create_CFString(application_identifier.c_str());
-	unsigned result = AMDeviceUninstallApplication(socket, appid_cfstring, NULL, [] {}, NULL);
+	unsigned result = AMDeviceSecureUninstallApplication(0, devices[device_identifier].device_info, appid_cfstring, 0, NULL, 0);
 	CFRelease(appid_cfstring);
 
 	if (result)
@@ -924,16 +919,24 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 		{
 			break;
 		}
-		std::vector<boost::any> current_list = boost::any_cast<std::vector<boost::any>>(dict["CurrentList"]);
-		for (boost::any &list : current_list)
-		{
-			std::map<std::string, boost::any> app_info = boost::any_cast<std::map<std::string, boost::any>>(list);
-			json current_info = {
-				{ "IceniumLiveSyncEnabled", app_info.count("IceniumLiveSyncEnabled") && boost::any_cast<bool>(app_info["IceniumLiveSyncEnabled"]) },
-				{ "CFBundleIdentifier", app_info.count("CFBundleIdentifier") ? boost::any_cast<std::string>(app_info["CFBundleIdentifier"]) : "" },
-				{ "configuration", app_info.count("configuration") ? boost::any_cast<std::string>(app_info["configuration"]) : ""},
-			};
-			livesync_app_infos.push_back(current_info);
+
+		// Due to a concurrency issue we may receive an answer that we're not expecting here
+		// We actually receive and answer from installation_proxy here and we expect it to contain information about currently installed applications
+		// However if the installation_proxy service is being used on the device by another process or thread regardless of whether by us or not we may receive other answers too
+		// Then we may receive the messages from said usage instead of the expected messages containing information about installed applications.
+		// NB! These messages may be lost for the other user of installation_proxy! Be advised.
+		if (dict.count(kCurrentApplicationsKey)) {
+			std::vector<boost::any> current_list = boost::any_cast<std::vector<boost::any>>(dict[kCurrentApplicationsKey]);
+			for (boost::any &list : current_list)
+			{
+				std::map<std::string, boost::any> app_info = boost::any_cast<std::map<std::string, boost::any>>(list);
+				json current_info = {
+					{ "IceniumLiveSyncEnabled", app_info.count("IceniumLiveSyncEnabled") && boost::any_cast<bool>(app_info["IceniumLiveSyncEnabled"]) },
+					{ "CFBundleIdentifier", app_info.count("CFBundleIdentifier") ? boost::any_cast<std::string>(app_info["CFBundleIdentifier"]) : "" },
+					{ "configuration", app_info.count("configuration") ? boost::any_cast<std::string>(app_info["configuration"]) : ""},
+				};
+				livesync_app_infos.push_back(current_info);
+			}
 		}
 	}
 

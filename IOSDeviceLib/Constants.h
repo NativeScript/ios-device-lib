@@ -58,6 +58,7 @@ static const char *kPathPascalCase = "Path";
 static const char *kPathUpperCase = "PATH";
 static const char *kError = "error";
 static const char *kErrorKey = "Error";
+static const char *kCurrentApplicationsKey = "CurrentList";
 static const char *kCommandKey = "Command";
 static const char *kStatusKey = "Status";
 static const char *kResponse = "response";

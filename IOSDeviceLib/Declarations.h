@@ -142,6 +142,7 @@ typedef unsigned(__cdecl *cfdictionary_get_count)(CFDictionaryRef);
 typedef void(__cdecl *cfdictionary_get_keys_and_values)(CFDictionaryRef, const void**, const void**);
 typedef CFStringRef(__cdecl *cfstring_create_with_cstring)(void*, const char*, unsigned);
 typedef unsigned(__cdecl *device_secure_operation_with_path)(int, const DeviceInfo*, CFURLRef, CFDictionaryRef, void(*f)(), int);
+typedef unsigned(__cdecl *device_secure_operation_with_bundle_id)(int, const DeviceInfo*, CFStringRef, int, void(*f)(), int);
 typedef void(__cdecl *cfrelease)(CFStringRef);
 
 typedef CFDictionaryRef(__cdecl *cfdictionary_create)(void *, void*, void*, int, void*, void*);
@@ -177,6 +178,7 @@ typedef int(__cdecl *usb_mux_connect_by_port)(int, int, long long*);
 #define AMDeviceCopyValue GET_IF_EXISTS(__AMDeviceCopyValue, device_copy_value, mobile_device_dll, "AMDeviceCopyValue")
 #define AMDeviceStartService GET_IF_EXISTS(__AMDeviceStartService, device_start_service, mobile_device_dll, "AMDeviceStartService")
 #define AMDeviceUninstallApplication GET_IF_EXISTS(__AMDeviceUninstallApplication, device_uninstall_application, mobile_device_dll, "AMDeviceUninstallApplication")
+#define AMDeviceSecureUninstallApplication GET_IF_EXISTS(__AMDeviceSecureUninstallApplication, device_secure_operation_with_bundle_id, mobile_device_dll, "AMDeviceSecureUninstallApplication")
 #define AMDeviceStartSession GET_IF_EXISTS(__AMDeviceStartSession, device_connection_operation, mobile_device_dll, "AMDeviceStartSession")
 #define AMDeviceStopSession GET_IF_EXISTS(__AMDeviceStopSession, device_connection_operation, mobile_device_dll, "AMDeviceStopSession")
 #define AMDeviceConnect GET_IF_EXISTS(__AMDeviceConnect, device_connection_operation, mobile_device_dll, "AMDeviceConnect")
@@ -237,6 +239,7 @@ extern "C"
 	int AMDeviceGetConnectionID(const DeviceInfo*);
 	int AMDeviceGetInterfaceType(const DeviceInfo*);
 	unsigned AMDeviceUninstallApplication(HANDLE, CFStringRef, void*, void(*f)(), void*);
+	unsigned AMDeviceSecureUninstallApplication(int, const DeviceInfo*, CFStringRef, int, void(*f)(), int);
 	unsigned AMDeviceStartSession(const DeviceInfo*);
 	unsigned AMDeviceStopSession(const DeviceInfo*);
 	unsigned AMDeviceConnect(const DeviceInfo*);
