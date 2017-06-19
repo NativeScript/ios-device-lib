@@ -493,8 +493,14 @@ void uninstall_application(std::string application_identifier, std::string devic
 		return;
 	}
 
+	HANDLE socket = start_service(device_identifier, kInstallationProxy, method_id);
+	if (!socket)
+	{
+		return;
+	}
+
 	CFStringRef appid_cfstring = create_CFString(application_identifier.c_str());
-	unsigned result = AMDeviceSecureUninstallApplication(0, devices[device_identifier].device_info, appid_cfstring, 0, NULL, 0);
+	unsigned result = AMDeviceUninstallApplication(socket, appid_cfstring, NULL, [] {}, NULL);
 	CFRelease(appid_cfstring);
 
 	if (result)
