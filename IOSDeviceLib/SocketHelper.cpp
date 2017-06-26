@@ -177,7 +177,7 @@ void proxy_socket_io(SOCKET first, SOCKET second, SocketClosedCallback first_soc
 	std::thread([=]() {
 		// Send the messages received on the first socket to the second socket.
 		proxy_socket_messages(first, second);
-		first_socket_closed_callback(first);
+		first_socket_closed_callback(second);
 	}).detach();
 
 	std::thread([=]() {
