@@ -221,7 +221,8 @@ void cleanup_file_resources(const std::string& device_identifier)
 
 	if (devices[device_identifier].apps_cache.size())
 	{
-		for (auto const& key_value_pair : devices[device_identifier].apps_cache)
+		std::map<std::string, ApplicationCache> apps_cache_clone = devices[device_identifier].apps_cache;
+		for (auto const& key_value_pair : apps_cache_clone)
 		{
 			cleanup_file_resources(device_identifier, key_value_pair.first);
 		}
