@@ -9,4 +9,5 @@ int gdb_send_message(std::string message, SOCKET socket, long long length = -1);
 bool run_application(std::string& executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache);
 bool stop_application(std::string& executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache);
 void detach_connection(SOCKET socket, std::string& application_identifier, DeviceData* device_data);
+void erase_gdb_instance(DeviceData* device_data);
 

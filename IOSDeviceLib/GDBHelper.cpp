@@ -89,7 +89,7 @@ bool stop_application(std::string & executable, SOCKET socket, std::string& appl
 	RETURN_IF_FALSE(init(executable, socket, application_identifier, apps_cache));
 	// If we just send kill here it doesn't work
 	// I believe it is due to some racing condition because when I send kill I sometimes receive an error and sometimes - nothing
-	
+
 	std::string answer;
 	bool can_send_kill = false;
 	for (size_t _ = 0; _ < kRetryCount; _++)
@@ -129,5 +129,13 @@ void detach_connection(SOCKET socket, std::string& application_identifier, Devic
 	gdb_send_message("D", socket);
 	std::string answer = receive_message_raw(socket);
 	device_data->apps_cache[application_identifier].has_initialized_gdb = false;
-	device_data->services.erase(kDebugServer);
+	erase_gdb_instance(device_data);
+}
+
+void erase_gdb_instance(DeviceData* device_data)
+{
+	if (device_data->services.count(kDebugServer))
+	{
+		device_data->services.erase(kDebugServer);
+	}
 }
