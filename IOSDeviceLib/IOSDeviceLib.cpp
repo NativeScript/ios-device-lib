@@ -586,6 +586,7 @@ void install_application(std::string install_path, std::string device_identifier
 	print(json({ { kResponse, "Successfully installed application" }, { kId, method_id }, {kDeviceId, device_identifier}}));
 	// In case this is a REinstall we need to invalidate cached file resources
 	cleanup_file_resources(device_identifier);
+	erase_gdb_instance(&devices[device_identifier]);
 }
 
 void perform_detached_operation(void(*operation)(std::string, std::string), std::string arg, std::string method_id)
