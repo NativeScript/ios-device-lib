@@ -40,21 +40,13 @@ exports.MessageUnpackStream = class MessageUnpackStream extends stream.Transform
 				this.push(messageBuffer);
 				this._endUnpackingMessages(done);
 			}
-		} else if (this._unfinishedMessage.length && data.length >= HeaderSize) {
+		} else {
 			// Append the new data to the unfinished message and try to unpack again.
 			const concatenatedMessage = Buffer.concat([this._unfinishedMessage, data]);
 
 			// Clear the unfinished message buffer.
 			this._unfinishedMessage = new Buffer(0);
 			this._transform(concatenatedMessage);
-			this._endUnpackingMessages(done);
-		} else {
-			// While debugging the data here contains one character - \0, null or 0.
-			// I think we get here when the Node inner buffer for the data of the data event
-			// is filled with data and the last symbol is a part of the length header of the next message.
-			// That's why we need this concat.
-			// This code is tested with 10 000 000 messages in while loop.
-			this._unfinishedMessage = Buffer.concat([this._unfinishedMessage, data]);
 			this._endUnpackingMessages(done);
 		}
 	}
