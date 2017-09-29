@@ -276,3 +276,6 @@ xcuserdata/
 
 ### VS Code
 .vscode
+
+### The following folder is present because of a workaround for MobileDevice.framework and Xcode 9.0
+.frameworks/*

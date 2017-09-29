@@ -1110,6 +1110,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 70F6ADB21DEEB71300DD4722 /* Build configuration list for PBXNativeTarget "IOSDeviceLib" */;
 			buildPhases = (
+				4B3F4EB41F7E7D24009F5530 /* Run Script */,
 				70F6ADA71DEEB71300DD4722 /* Sources */,
 				70F6ADA81DEEB71300DD4722 /* Frameworks */,
 				70F6ADA91DEEB71300DD4722 /* CopyFiles */,
@@ -1153,6 +1154,23 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4B3F4EB41F7E7D24009F5530 /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "mobileDeviceFrameworkPath=/System/Library/PrivateFrameworks/MobileDevice.framework\nprojectFrameworksPath=\"${PROJECT_DIR}/.frameworks\"\necho Copying private frameworks...\n(test -d $mobileDeviceFrameworkPath && mkdir -p \"$projectFrameworksPath\" && cp -r $mobileDeviceFrameworkPath \"$projectFrameworksPath\" && echo Copy completed) || echo Done";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		70F6ADA71DEEB71300DD4722 /* Sources */ = {
@@ -1263,6 +1281,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
+					"$(PROJECT_DIR)/.frameworks",
 				);
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/IOSDeviceLib/PlistCpp/include/**";
 				PRODUCT_NAME = "ios-device-lib";
@@ -1277,6 +1296,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
+					"$(PROJECT_DIR)/.frameworks",
 				);
 				HEADER_SEARCH_PATHS = "$(SRCROOT)/IOSDeviceLib/PlistCpp/include/**";
 				PRODUCT_NAME = "ios-device-lib";
