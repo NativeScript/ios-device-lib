@@ -350,7 +350,7 @@ void start_run_loop()
 }
 
 std::mutex start_service_mutex;
-HANDLE start_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error)
+HANDLE start_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
 {
 	start_service_mutex.lock();
 	if (!devices.count(device_identifier))
@@ -385,7 +385,9 @@ HANDLE start_service(std::string device_identifier, const char* service_name, st
 		return NULL;
 	}
 
-	devices[device_identifier].services[service_name] = socket;
+	if (!skip_cache) {
+		devices[device_identifier].services[service_name] = socket;
+	}
 
 	start_service_mutex.unlock();
 	return socket;
@@ -1058,7 +1060,7 @@ void device_log(std::string device_identifier, std::string method_id)
 
 void post_notification(std::string device_identifier, PostNotificationInfo post_notification_info, std::string method_id)
 {
-	HANDLE handle = start_service(device_identifier, kNotificationProxy, method_id);
+	HANDLE handle = start_service(device_identifier, kNotificationProxy, method_id, true, true);
 	if (!handle)
 	{
 		return;
