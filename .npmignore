@@ -10,3 +10,4 @@ DerivedData
 **/*.pdb
 **/*.ipdb
 **/*.iobj
+.frameworks/*
