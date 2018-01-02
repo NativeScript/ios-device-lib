@@ -6,14 +6,11 @@ JavaScript library, designed to facilitate communication with iOS devices. The l
 Quick overview
 ==
 
-In order to use `ios-device-lib`, just add a reference to it in your package.json:
-```JSON
-dependencies: {
-	"ios-device-lib": "*"
-}
-```
+In order to use `ios-device-lib`, just add a reference to it in your package.json by executing
 
-After that execute `npm install` in the directory, where your `package.json` is located. This command will install all your dependencies in `node_modules` directory. Now you are ready to use `ios-device-lib` in your project:
+`$ npm install --save --save-exact ios-device-lib`
+
+In your project. Now you are ready to use `ios-device-lib` in your project:
 
 ```JavaScript
 const DeviceLib = require("ios-device-lib");
