@@ -3,17 +3,14 @@ ios-device-lib
 
 JavaScript library, designed to facilitate communication with iOS devices. The library’s interface is Promise-based.
 
-Usage
+Quick overview
 ==
 
-In order to use `ios-device-lib`, just add a reference to it in your package.json:
-```JSON
-dependencies: {
-	"ios-device-lib": "*"
-}
-```
+In order to use `ios-device-lib`, just add a reference to it in your package.json by executing
 
-After that execute `npm install` in the directory, where your `package.json` is located. This command will install all your dependencies in `node_modules` directory. Now you are ready to use `ios-device-lib` in your project:
+`$ npm install --save --save-exact ios-device-lib`
+
+In your project. Now you are ready to use `ios-device-lib` in your project:
 
 ```JavaScript
 const DeviceLib = require("ios-device-lib");
@@ -33,7 +30,291 @@ dl.install("./app.ipa", ["deviceId1", "deviceId2"])
 	});
 ```
 
+Building
+==
+The `ios-device-lib` package can be built on either Windows (requires Visual Studio) or macOS (requires Xcode). In order to build the application one should simply open the `.sln` or `.xcodeproj` file with the respective tool and click build. Whenever building in **release** configuration, the result binary will end up in `bin/<platform-name>/<architecture>`, relative to the root of this repository. For example `bin/win32/x64/` or `bin/darwin/x64/`. The JavaScript counterpart of the C++ code expects the binaries to be present in those exact locations, so one would have to build at least once prior to using the application.
+
+Inter-process Communication
+==
+This application consists of two separate layers - one `C++` and one `Node.js`. The `C++` layer implements the application's business logic, whereas the `Node.js` layer exists simply for alleviation. Whenever the `Node.js` part is used, it launches the `C++` binary and initiates communication with it. This communication consists of requests **to the binary** via the `stdin` pipe and responses **from the binary** via the `stdout` pipe. Currently the `stderr` pipe is only used for debugging purposes.
+
+The nature of this way of communication imposes some quirks:
+* All request messages are marked with an unique identifier which is also present in the response messages. This way the `Node.js` layer can distinguish between different messages and match a request with it's response counterpart
+* All messages are printed in binary on the `stdout` (and the `stderr`) pipe. Each message is prefixed with a 4 byte header, containing the length of the succeeding message. These 4-byte prefixes appear as peculiar symbols in the console whenever one decides to launch the binary directly. This is necessary as the messages have variable length and in addition it alleviates printing from the `C++` code as the strings we want to print might contain `NULL` characters which would otherwise terminate printing.
+
 API Reference
 ==
-This section contains information about each public method.
+In order to use the application directly one can either launch the binary, either directly or from within an IDE, or use the JavaScript API. Whenever using this library **make sure that there is at least one actual iOS device attached to the system**. This library has no functionality whatsoever without actual devices.
 
+## C++ Binary
+Upon launching the binary it will report all devices currently attached in the following form:
+```
+{
+  "deviceColor": "1",
+  "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "deviceName": "iPhone",
+  "event": "deviceFound",
+  "productType": "iPhone9,4",
+  "productVersion": "11.0.3",
+  "status": "Connected"
+}
+```
+
+After that the binary is ready to accept requests via its standart input. Currently each passed message **must be on one line**, ending with a new line (Enter key) in order for it to be parsed correctly. Each message contains the **name** of the method, which you'd like to invoke, an **identification string** and the **method's arguments**. Messages are processed asynchronously, hence multiple messages can be passed at once. Example messages for the different opperations can be found below:
+
+### List applications
+{
+  "methods": [
+    {
+      "id": "1",
+      "name": "apps",
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ]
+    }
+  ]
+}
+
+### Install application
+{
+  "methods": [
+    {
+      "id": "2",
+      "name": "install",
+      "args": [
+        "C:\\\apps\\\app.ipa",
+        [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+        ]
+      ]
+    }
+  ]
+}
+
+### Uninstall application
+{
+  "methods": [
+    {
+      "id": "3",
+      "name": "uninstall",
+      "args": [
+        "com.sample.MyApp",
+        [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+        ]
+      ]
+    }
+  ]
+}
+
+### List files in an application
+{
+  "methods": [
+    {
+      "id": "4",
+      "name": "list",
+      "args": [
+        {
+          "appId": "com.sample.MyApp",
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "path": "Library\\\Application Support
+        }
+      ]
+    }
+  ]
+}
+
+### Upload a file from the local file system to the device
+{
+  "methods": [
+    {
+      "id": "5",
+      "name": "upload",
+      "args": [
+        {
+          "appId": "com.sample.MyApp",
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "source": "D:\\\Project\\\app.js",
+          "destination": "Library\\\Application Support\\\LiveSync\\\app\\\app.js"
+        }
+      ]
+    }
+  ]
+}
+
+### Delete a file from the device
+{
+  "methods": [
+    {
+      "id": "6",
+      "name": "delete",
+      "args": [
+        {
+          "appId": "com.sample.MyApp",
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "destination": "Library\\\Application Support\\\LiveSync\\\app\\\app.js"
+        }
+      ]
+    }
+  ]
+}
+
+### Retrieve the contents of a file from the device
+{
+  "methods": [
+    {
+      "id": "7",
+      "name": "read",
+      "args": [
+        {
+          "appId": "com.sample.MyApp",
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "path": "Library\\\Application Support\\\LiveSync\\\app\\\app.js"
+        }
+      ]
+    }
+  ]
+}
+
+### Download a file from the device to the local system
+{
+  "methods": [
+    {
+      "id": "8",
+      "name": "download",
+      "args": [
+        {
+          "appId": "com.sample.MyApp",
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "source": "Library\\\Application Support\\\LiveSync\\\app\\\app.js",
+          "destination": "D:\\\Downloads\\\app.js"
+        }
+      ]
+    }
+  ]
+}
+
+### Start printing the device log for a device
+{
+  "methods": [
+    {
+      "id": "9",
+      "name": "log",
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ]
+    }
+  ]
+}
+
+### Post a notification to a device. (As if ot was dispatched via NSNotificationCenter). This call is non-blocking.
+#### Post
+{
+  "methods": [
+    {
+      "id": "10",
+      "name": "postNotification",
+      "args": [
+        {
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "commandType": "PostNotification",
+          "notificationName": "com.sample.MyApp:NativeScript.Debug.AttachAvailabilityQuery"
+        }
+      ]
+    }
+  ]
+}
+
+#### Observe
+{
+  "methods": [
+    {
+      "id": "11",
+      "name": "postNotification",
+      "args": [
+        {
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "commandType": "ObserveNotification",
+          "notificationName": "com.sample.MyApp:NativeScript.Debug.AttachAvailable"
+        }
+      ]
+    }
+  ]
+}
+
+### Post a notification to a device and await its response. This call is blocking.
+{
+  "methods": [
+    {
+      "id": "12",
+      "name": "awaitNotificationResponse",
+      "args": [
+        {
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "socket": 10,
+          "timeout": 9,
+          "responseCommandType": "RelayNotification",
+          "responsePropertyName": "Name"
+        }
+      ]
+    }
+  ]
+}
+
+### Start an application.
+{
+  "methods": [
+    {
+      "id": "13",
+      "name": "start",
+      "args": [
+        {
+          "appId": "com.sample.MyApp",
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      ]
+    }
+  ]
+}
+
+### Stop a running application.
+{
+  "methods": [
+    {
+      "id": "14",
+      "name": "stop",
+      "args": [
+        {
+          "appId": "com.sample.MyApp",
+          "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      ]
+    }
+  ]
+}
+
+## JavaScript interface
+A detailed definition of all the methods can be found [here](https://github.com/telerik/ios-device-lib/blob/master/typings/interfaces.d.ts#L127)
+
+Additional information
+==
+* Upon launching the `ios-device-lib` binary it will immediately start a detached thread with a run loop so that it can proactively detect attaching and detaching of devices.
+* All requests to the binary are executed in separate threads
+* **Error understanding:** Whenever an error is raised, for example:
+```
+{
+  "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "error": {
+    "code": -402653081,
+    "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "message": "Could not install application"
+  },
+  "id": "1"
+}
+```
+How does one go about deciphering the error code?
+
+First off you'd need to convert the code to hex (this can easily be done with a calculator application for example). So `-402653081` becomes `FFFFFFFFE8000067` or `E8000067` if we disregard the sign. Using this hex code you can look the error up in [this](https://github.com/samdmarshall/SDMMobileDevice/blob/master/Framework/include/SDMMobileDevice/SDMMD_Error.h) header file. In this example we can see that this is a `kAMDAPIInternalError`, hence an internal error.
