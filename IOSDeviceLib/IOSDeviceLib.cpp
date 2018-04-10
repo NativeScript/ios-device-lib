@@ -245,6 +245,23 @@ inline bool has_complete_status(std::map<std::string, boost::any>& dict)
 	return boost::any_cast<std::string>(dict[kStatusKey]) == kComplete;
 }
 
+void on_device_found(const DevicePointer* device_ptr, std::string device_identifier, std::string eventString, json &result)
+{
+	/*
+	Interface type can be one of the followings:
+		-1 - invalid interface type
+		0 - unknown interface type
+		1 - usb interface type
+		2 - wifi interface type
+	*/
+	int interface_type = AMDeviceGetInterfaceType(device_ptr->device_info);
+	if (interface_type == kUSBInterfaceType) {
+		devices[device_identifier] = { device_ptr->device_info, nullptr };
+		result[kEventString] = eventString;
+		get_device_properties(device_identifier, result);
+	}
+}
+
 void device_notification_callback(const DevicePointer* device_ptr)
 {
 	std::string device_identifier = get_cstring_from_cfstring(AMDeviceCopyDeviceIdentifier(device_ptr->device_info));
@@ -254,9 +271,7 @@ void device_notification_callback(const DevicePointer* device_ptr)
 	{
 		case kADNCIMessageConnected:
 		{
-			devices[device_identifier] = { device_ptr->device_info, nullptr };
-			result[kEventString] = kDeviceFound;
-			get_device_properties(device_identifier, result);
+			on_device_found(device_ptr, device_identifier, kDeviceFound, result);
 			break;
 		}
 		case kADNCIMessageDisconnected:
@@ -280,9 +295,7 @@ void device_notification_callback(const DevicePointer* device_ptr)
 		}
 		case kADNCIMessageTrusted:
 		{
-			devices[device_identifier] = { device_ptr->device_info, nullptr };
-			result[kEventString] = kDeviceTrusted;
-			get_device_properties(device_identifier, result);
+			on_device_found(device_ptr, device_identifier, kDeviceTrusted, result);
 			break;
 		}
 	}
