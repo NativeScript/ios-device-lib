@@ -1,5 +1,6 @@
 IOSDeviceLib/*
 IOSDeviceLib.xcodeproj/*
+test/
 x64/*
 x86/*
 **/*.sln

@@ -5,7 +5,8 @@
   "types": "./typings/ios-device-lib.d.ts",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node node_modules/mocha/bin/_mocha --require ./test/test-entry.js --recursive --timeout 10000 test/other",
+    "test-all": "node node_modules/mocha/bin/_mocha --require ./test/test-entry.js --recursive  --timeout 10000 test/"
   },
   "repository": {
     "type": "git",
@@ -20,5 +21,11 @@
   "dependencies": {
     "bufferpack": "0.0.6",
     "node-uuid": "1.4.7"
+  },
+  "devDependencies": {
+    "chai": "4.1.2",
+    "chai-as-promised": "7.1.1",
+    "lodash": "4.17.4",
+    "mocha": "4.1.0"
   }
 }
