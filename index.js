@@ -31,8 +31,8 @@ const Events = {
 class IOSDeviceLib extends EventEmitter {
 	constructor(onDeviceFound, onDeviceLost, options) {
 		super();
-		options = options || {};
-		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler(options);
+		this._options = options || {};
+		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler(this._options);
 		this._iosDeviceLibStdioHandler.startReadingData();
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceFoundEventName, onDeviceFound);
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceLostEventName, onDeviceLost);
@@ -87,7 +87,7 @@ class IOSDeviceLib extends EventEmitter {
 	}
 
 	startDeviceLog(deviceIdentifiers) {
-		this._getPromise(MethodNames.log, deviceIdentifiers, { shouldEmit: true });
+		this._getPromise(MethodNames.log, deviceIdentifiers, { shouldEmit: true, disregardTimeout: true });
 	}
 
 	connectToPort(connectToPortArray) {
@@ -99,26 +99,58 @@ class IOSDeviceLib extends EventEmitter {
 		this._iosDeviceLibStdioHandler.dispose(signal);
 	}
 
-	_getPromise(methodName, args, options) {
+	_getPromise(methodName, args, options = {}) {
 		return new Promise((resolve, reject) => {
 			if (!args || !args.length) {
 				return reject(new Error("No arguments provided"));
 			}
 
+			let timer = null;
+			let eventHandler = null;
+			let deviceLostHandler = null;
 			const id = uuid.v4();
-			const eventHandler = (message) => {
+			const removeListeners = () => {
+				if (eventHandler) {
+					this._iosDeviceLibStdioHandler.removeListener(Constants.DataEventName, eventHandler);
+				}
+
+				if (deviceLostHandler) {
+					this._iosDeviceLibStdioHandler.removeListener(Constants.DeviceLostEventName, deviceLostHandler);
+				}
+			};
+
+			const handleMessage = (message) => {
+				removeListeners();
+				message.error ? reject(message.error) : resolve(message);
+			};
+
+			deviceLostHandler = (device) => handleMessage({ error: new Error(`Device ${device.deviceId} lost during operation ${methodName} for message ${id}`) });
+
+			eventHandler = (message) => {
 				if (message && message.id === id) {
+					if (timer) {
+						clearTimeout(timer);
+					}
+
 					delete message.id;
 					if (options && options.shouldEmit) {
 						this.emit(Events.deviceLogData, message);
 					} else {
-						message.error ? reject(message.error) : resolve(message);
-						this._iosDeviceLibStdioHandler.removeListener(Constants.DataEventName, eventHandler);
+						handleMessage(message);
 					}
 				}
 			};
 
+			if (this._options.timeout && !options.disregardTimeout) {
+				// TODO: Check if we should clear the timers when dispose is called.
+				timer = setTimeout(() => {
+					handleMessage({ error: new Error(`Timeout waiting for ${methodName} response from ios-device-lib, message id: ${id}.`) });
+				}, this._options.timeout);
+			}
+
 			this._iosDeviceLibStdioHandler.on(Constants.DataEventName, eventHandler);
+			this._iosDeviceLibStdioHandler.on(Constants.DeviceLostEventName, deviceLostHandler);
+
 			this._iosDeviceLibStdioHandler.writeData(this._getMessage(id, methodName, args));
 		});
 	}
