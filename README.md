@@ -14,20 +14,19 @@ In your project. Now you are ready to use `ios-device-lib` in your project:
 
 ```JavaScript
 const DeviceLib = require("ios-device-lib");
-const dl = new DeviceLib(d => {
+const dl = new DeviceLib.IOSDeviceLib(device => {
 	console.log("Device FOUND!", device);
+	dl.install("./app.ipa", [device.deviceId])
+		.forEach(promise => {
+			promise.then(response => {
+				console.log("INSTALL PASSED", response);
+			}).catch(err => {
+				console.log("An error occurred ;(", err);
+			});
+		});
 }, device => {
 	console.log("Device LOST!", device);
 });
-
-dl.install("./app.ipa", ["deviceId1", "deviceId2"])
-	.forEach(promise => {
-		promise.then(response => {
-			console.log("INSTALL PASSED", response);
-		}).catch(err => {
-			console.log("An error occurred ;(", err);
-		});
-	});
 ```
 
 Building
