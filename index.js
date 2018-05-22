@@ -87,7 +87,7 @@ class IOSDeviceLib extends EventEmitter {
 	}
 
 	startDeviceLog(deviceIdentifiers) {
-		this._getPromise(MethodNames.log, deviceIdentifiers, { shouldEmit: true, disregardTimeout: true });
+		this._getPromise(MethodNames.log, deviceIdentifiers, { shouldEmit: true, disregardTimeout: true, doNotFailOnDeviceLost: true });
 	}
 
 	connectToPort(connectToPortArray) {
@@ -119,12 +119,25 @@ class IOSDeviceLib extends EventEmitter {
 				}
 			};
 
+			// In case device is lost during waiting for operation to complete
+			// or in case we do not execute operation in the specified timeout
+			// remove all handlers and reject the promise.
+			// NOTE: This is not applicable for device logs, where the Promise is not awaited
+			// Rejecting it results in Unhandled Rejection
 			const handleMessage = (message) => {
 				removeListeners();
 				message.error ? reject(message.error) : resolve(message);
 			};
 
-			deviceLostHandler = (device) => handleMessage({ error: new Error(`Device ${device.deviceId} lost during operation ${methodName} for message ${id}`) });
+			deviceLostHandler = (device) => {
+				const message = `Device ${device.deviceId} lost during operation ${methodName} for message ${id}`;
+
+				if (!options.doNotFailOnDeviceLost) {
+					message = { error: new Error(message) };
+				}
+
+				handleMessage(message);
+			};
 
 			eventHandler = (message) => {
 				if (message && message.id === id) {
