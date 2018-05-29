@@ -130,7 +130,7 @@ class IOSDeviceLib extends EventEmitter {
 			};
 
 			deviceLostHandler = (device) => {
-				const message = `Device ${device.deviceId} lost during operation ${methodName} for message ${id}`;
+				let message = `Device ${device.deviceId} lost during operation ${methodName} for message ${id}`;
 
 				if (!options.doNotFailOnDeviceLost) {
 					message = { error: new Error(message) };
