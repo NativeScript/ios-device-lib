@@ -671,13 +671,17 @@ void read_dir(afc_connection* afc_conn_p, const char* dir, json &files, std::str
 	}
 }
 
+std::mutex list_files_mutex;
 void list_files(std::string device_identifier, const char *application_identifier, const char *device_path, std::string method_id)
 {
-    std::string device_root(device_path);
-    afc_connection* afc_conn_p = get_afc_connection(device_identifier, application_identifier, device_root, method_id);
+	list_files_mutex.lock();
+
+	std::string device_root(device_path);
+	afc_connection* afc_conn_p = get_afc_connection(device_identifier, application_identifier, device_root, method_id);
 	if (!afc_conn_p)
 	{
 		print_error("Could not establish AFC Connection", device_identifier, method_id);
+		list_files_mutex.unlock();
 		return;
 	}
 
@@ -694,6 +698,9 @@ void list_files(std::string device_identifier, const char *application_identifie
 	{
 		print_error(errors.str().c_str(), device_identifier, method_id, kAFCCustomError);
 	}
+	
+	cleanup_file_resources(device_identifier, application_identifier);
+	list_files_mutex.unlock();
 }
 
 bool ensure_device_path_exists(std::string &device_path, afc_connection *connection)
@@ -714,6 +721,7 @@ bool ensure_device_path_exists(std::string &device_path, afc_connection *connect
 	return true;
 }
 
+std::mutex upload_file_mutex;
 void upload_file(std::string device_identifier, const char *application_identifier, const std::vector<FileUploadData>& files, std::string method_id) {
 	json success_json = json({ { kResponse, "Successfully uploaded files" },{ kId, method_id },{ kDeviceId, device_identifier } });
 	if (!files.size())
@@ -721,11 +729,14 @@ void upload_file(std::string device_identifier, const char *application_identifi
 		print(success_json);
 		return;
 	}
+	
+	upload_file_mutex.lock();
 
 	std::string afc_destination_str = windows_path_to_unix(files[0].destination);
 	afc_connection* afc_conn_p = get_afc_connection(device_identifier, application_identifier, afc_destination_str, method_id);
 	if (!afc_conn_p)
 	{
+		upload_file_mutex.unlock();
 		// If there is no opened afc connection the get_afc_connection will print the error for the operation.
 		return;
 	}
@@ -810,6 +821,8 @@ void upload_file(std::string device_identifier, const char *application_identifi
 
 		// After a batch is completed we need to empty file_upload_threads so that the new batch may take the old one's place
 		file_upload_threads.clear();
+		cleanup_file_resources(device_identifier, application_identifier);
+		upload_file_mutex.unlock();
 	}
 
 	std::vector<std::string> filtered_errors;
@@ -825,18 +838,29 @@ void upload_file(std::string device_identifier, const char *application_identifi
 	}
 }
 
+std::mutex delete_file_mutex;
 void delete_file(std::string device_identifier, const char *application_identifier, const char *destination, std::string method_id) {
+	delete_file_mutex.lock();
+	
 	std::string destination_str = windows_path_to_unix(destination);
 	afc_connection* afc_conn_p = get_afc_connection(device_identifier, application_identifier, destination_str, method_id);
 	if (!afc_conn_p)
 	{
+		delete_file_mutex.unlock();
 		return;
 	}
 
 	destination = destination_str.c_str();
 	std::stringstream error_message;
 	error_message << "Could not remove file " << destination;
-	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(AFCRemovePath(afc_conn_p, destination), error_message.str().c_str(), device_identifier, method_id);
+	
+	unsigned afcRemovePathResult = AFCRemovePath(afc_conn_p, destination);
+	
+	cleanup_file_resources(device_identifier, application_identifier);
+	
+	delete_file_mutex.unlock();
+	
+	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(afcRemovePathResult, error_message.str().c_str(), device_identifier, method_id);
 	print(json({{ kResponse, "Successfully removed file" },{ kId, method_id },{ kDeviceId, device_identifier } }));
 }
 
@@ -857,10 +881,14 @@ std::unique_ptr<afc_file> get_afc_file(std::string device_identifier, const char
 	return result;
 }
 
+std::mutex read_file_mutex;
 void read_file(std::string device_identifier, const char *application_identifier, const char *path, std::string method_id, const char *destination = nullptr) {
+	read_file_mutex.lock();
+	
 	std::unique_ptr<afc_file> file = get_afc_file(device_identifier, application_identifier, path, method_id);
 	if (!file)
 	{
+		read_file_mutex.unlock();
 		return;
 	}
 
@@ -897,8 +925,13 @@ void read_file(std::string device_identifier, const char *application_identifier
 
 		result = std::string(file_contents.begin(), file_contents.end());
 	}
+	
+	unsigned afcFileRefCloseResult = AFCFileRefClose(file->afc_conn_p, file->file_ref);
+	cleanup_file_resources(device_identifier, application_identifier);
+	
+	read_file_mutex.unlock();
 
-	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(AFCFileRefClose(file->afc_conn_p, file->file_ref), "Could not close file reference", device_identifier, method_id);
+	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(afcFileRefCloseResult, "Could not close file reference", device_identifier, method_id);
 	print(json({{ kResponse, result },{ kId, method_id },{ kDeviceId, device_identifier } }));
 }
 
@@ -974,9 +1007,9 @@ std::map<std::string, std::string> parse_cfdictionary(CFDictionaryRef dict)
 	CFDictionaryGetKeysAndValues(dict, keys, values);
 	for (size_t index = 0; index < count; index++)
 	{
-        // The casts below are necessary - Xcode's compiler doesn't cope without them
-        CFStringRef value = (CFStringRef)values[index];
-        CFStringRef key_str = (CFStringRef)keys[index];
+		// The casts below are necessary - Xcode's compiler doesn't cope without them
+		CFStringRef value = (CFStringRef)values[index];
+		CFStringRef key_str = (CFStringRef)keys[index];
 		std::string key = get_cstring_from_cfstring(key_str);
 		if (CFGetTypeID(value) == CFStringGetTypeID())
 		{
@@ -1002,9 +1035,9 @@ std::map<std::string, std::map<std::string, std::string>> parse_lookup_cfdiction
 	CFDictionaryGetKeysAndValues(dict, keys, values);
 	for (size_t index = 0; index < count; index++)
 	{
-        CFStringRef key_str = (CFStringRef)keys[index];
-        CFDictionaryRef value_dict = (CFDictionaryRef)values[index];
-        std::string key = get_cstring_from_cfstring(key_str);
+		CFStringRef key_str = (CFStringRef)keys[index];
+		CFDictionaryRef value_dict = (CFDictionaryRef)values[index];
+		std::string key = get_cstring_from_cfstring(key_str);
 		result[key] = parse_cfdictionary(value_dict);
 	}
 
