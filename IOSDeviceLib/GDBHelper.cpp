@@ -62,9 +62,9 @@ bool init(std::string& executable, SOCKET socket, std::string& application_ident
 	return true;
 }
 
-bool run_application(std::string& executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache)
+bool run_application(std::string& executable, SOCKET socket, std::string& application_identifier, DeviceData* device_data)
 {
-	RETURN_IF_FALSE(init(executable, socket, application_identifier, apps_cache));
+	RETURN_IF_FALSE(init(executable, socket, application_identifier, device_data->apps_cache));
 	// Couldn't find official info on this but I'm guessing this is the method we need to call
 	RETURN_IF_FALSE(await_response("qLaunchSuccess", socket));
 	// vCont specifies a command to be run - c means continue
@@ -81,6 +81,9 @@ bool run_application(std::string& executable, SOCKET socket, std::string& applic
 	// We have decided we do not need this at the moment, but it is vital that it be read from the pipe
 	// Else it will remain there and may be read later on and mistaken for a response to same other package
 	std::string answer = receive_message_raw(socket);
+    
+	detach_connection(socket, application_identifier, device_data);
+    
 	return true;
 }
 
@@ -130,4 +133,5 @@ void detach_connection(SOCKET socket, std::string& application_identifier, Devic
 	std::string answer = receive_message_raw(socket);
 	device_data->apps_cache[application_identifier].has_initialized_gdb = false;
 	device_data->services.erase(kDebugServer);
+	close(socket);
 }
