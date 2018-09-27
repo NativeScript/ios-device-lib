@@ -6,7 +6,7 @@
 
 std::string get_gdb_message(std::string message);
 int gdb_send_message(std::string message, SOCKET socket, long long length = -1);
-bool run_application(std::string& executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache);
+bool run_application(std::string& executable, SOCKET socket, std::string& application_identifier, DeviceData* device_data);
 bool stop_application(std::string& executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache);
 void detach_connection(SOCKET socket, std::string& application_identifier, DeviceData* device_data);
 

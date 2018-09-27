@@ -1260,7 +1260,7 @@ void start_app(std::string device_identifier, std::string application_identifier
 		}
 
 		std::string executable = map[application_identifier][kPathPascalCase] + "/" + map[application_identifier]["CFBundleExecutable"];
-		if (run_application(executable, (SOCKET)gdb, application_identifier, devices[device_identifier].apps_cache))
+		if (run_application(executable, (SOCKET)gdb, application_identifier, &devices[device_identifier]))
 			print(json({ { kResponse, "Successfully started application" },{ kId, method_id },{ kDeviceId, device_identifier } }));
 		else
 			print_error("Could not start application", device_identifier, method_id, kApplicationsCustomError);
