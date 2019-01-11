@@ -35,7 +35,7 @@ bool await_response(std::string message, SOCKET socket)
 	return !starts_with(answer, kGDBErrorPrefix);
 }
 
-bool init(std::string& executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache)
+bool init(std::string& executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache,  bool wait_for_debugger = false)
 {
 	if (apps_cache[application_identifier].has_initialized_gdb)
 		return true;
@@ -50,21 +50,25 @@ bool init(std::string& executable, SOCKET socket, std::string& application_ident
 	// We need this because GDB isn't connected to any inferior process (e.g. the application we want to control)
 	RETURN_IF_FALSE(await_response("QSetDisableASLR:1", socket));
 	std::stringstream result;
+	std::string debugBrk = "--nativescript-debug-brk";
 	// Initializes the argv in the form of arglen,argnum,arg
 	// In our case:
 	// arglen - twice the size of the original argument because we HEX encode it and every symbol becomes two bytes
 	// argnum - 0 we only have one arg
 	// arg - the actual arg, which is HEX encoded because we set the environment that way
 	result << "A" << executable.size() * 2 << ",0," << to_hex(executable);
+	if (wait_for_debugger) {
+		result << debugBrk.size() * 2 << ",1," << to_hex(debugBrk);
+	}
 	RETURN_IF_FALSE(await_response(result.str(), socket));
 	// After all of this is done we can actually call a method with these arguments
 	apps_cache[application_identifier].has_initialized_gdb = true;
 	return true;
 }
 
-bool run_application(std::string& executable, SOCKET socket, std::string& application_identifier, DeviceData* device_data)
+bool run_application(std::string& executable, SOCKET socket, std::string& application_identifier, DeviceData* device_data, bool wait_for_debugger)
 {
-	RETURN_IF_FALSE(init(executable, socket, application_identifier, device_data->apps_cache));
+	RETURN_IF_FALSE(init(executable, socket, application_identifier, device_data->apps_cache, wait_for_debugger));
 	// Couldn't find official info on this but I'm guessing this is the method we need to call
 	RETURN_IF_FALSE(await_response("qLaunchSuccess", socket));
 	// vCont specifies a command to be run - c means continue
@@ -81,9 +85,9 @@ bool run_application(std::string& executable, SOCKET socket, std::string& applic
 	// We have decided we do not need this at the moment, but it is vital that it be read from the pipe
 	// Else it will remain there and may be read later on and mistaken for a response to same other package
 	std::string answer = receive_message_raw(socket);
-    
+	
 	detach_connection(socket, application_identifier, device_data);
-    
+	
 	return true;
 }
 
@@ -106,7 +110,7 @@ bool stop_application(std::string & executable, SOCKET socket, std::string& appl
 		// If we get infromation about the thread then apparently it is now safe to send the kill command
 		// Thread information contains data that I cannot decipher - looks like this:
 		// $T11thread:42202;00:0540001000000000;01:0608000700000000;02:0000000000000000;03:000c000000000000;04:0321000000000000;05:ffffffff00000000;06:0000000000000000;07:0100000000000000;08:bffbffff00000000;09:0000000700000000;0a:0001000700000000;0b:c0bdf0ff00000000;0c:034e0d00004d0d00;0d:0000000000000000;0e:004e0d00004e0d00;0f:0000000000000000;10:e1ffffffffffffff;11:20a59e8201000000;12:0000000000000000;13:0000000000000000;14:ffffffff00000000;15:0321000000000000;16:000c000000000000;17:08a0d66f01000000;18:0608000700000000;19:0000000000000000;1a:0608000700000000;1b:000c000000000000;1c:0100000000000000;1d:009fd66f01000000;1e:dcffab8101000000;1f:b09ed66f01000000;20:6c01ac8101000000;21:00000060;metype:5;mecount:2;medata:10003;medata:11;memory:0x16fd69f00=609fd66f01000000ecdcab8201000000;memory:0x16fd69f60=70acd66f0100000008b9ab8201000000;#00
-        // If the application is not running the gdb will return $OK#00 instead of the above message.
+		// If the application is not running the gdb will return $OK#00 instead of the above message.
 		if (contains(answer, "thread") || contains(answer, "$OK#"))
 		{
 			can_send_kill = true;
@@ -134,7 +138,7 @@ void detach_connection(SOCKET socket, std::string& application_identifier, Devic
 	device_data->apps_cache[application_identifier].has_initialized_gdb = false;
 	device_data->services.erase(kDebugServer);
 #ifdef _WIN32
-    closesocket(socket);
+	closesocket(socket);
 #else
 	close(socket);
 #endif
