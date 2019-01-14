@@ -8,13 +8,15 @@ const HeaderSize = 4;
 exports.MessageUnpackStream = class MessageUnpackStream extends stream.Transform {
 	constructor(opts) {
 		super(opts);
-		this._unfinishedMessage = new Buffer(0);
+		this._unfinishedMessage = Buffer.from("");
 	}
 
 	_transform(data, encoding, done) {
 		if (!this._unfinishedMessage.length && data.length >= HeaderSize) {
 			// Get the message length header.
 			const messageSizeBuffer = data.slice(0, HeaderSize);
+			// > - big-endian
+			// i - signed long
 			const messageLength = bufferpack.unpack(">i", messageSizeBuffer)[0];
 			const dataLengthWithoutHeader = data.length - HeaderSize;
 
@@ -40,13 +42,16 @@ exports.MessageUnpackStream = class MessageUnpackStream extends stream.Transform
 				this.push(messageBuffer);
 				this._endUnpackingMessages(done);
 			}
-		} else {
+		} else if (this._unfinishedMessage.length && data.length) {
 			// Append the new data to the unfinished message and try to unpack again.
 			const concatenatedMessage = Buffer.concat([this._unfinishedMessage, data]);
 
 			// Clear the unfinished message buffer.
-			this._unfinishedMessage = new Buffer(0);
+			this._unfinishedMessage = Buffer.from("");
 			this._transform(concatenatedMessage);
+			this._endUnpackingMessages(done);
+		} else {
+			this._unfinishedMessage = Buffer.from(data);
 			this._endUnpackingMessages(done);
 		}
 	}
