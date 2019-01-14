@@ -5,7 +5,7 @@ const bufferpack = require("bufferpack");
 
 const HeaderSize = 4;
 
-exports.MessageUnpackStream = class MessageUnpackStream extends stream.Transform {
+class MessageUnpackStream extends stream.Transform {
 	constructor(opts) {
 		super(opts);
 		this._unfinishedMessage = Buffer.from("");
@@ -66,3 +66,5 @@ exports.MessageUnpackStream = class MessageUnpackStream extends stream.Transform
 		}
 	}
 }
+
+exports.MessageUnpackStream = MessageUnpackStream;
