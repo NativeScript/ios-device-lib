@@ -1236,7 +1236,7 @@ void stop_app(std::string device_identifier, std::string application_identifier,
 	}
 }
 
-void start_app(std::string device_identifier, std::string application_identifier, std::string ddi, std::string method_id)
+void start_app(std::string device_identifier, std::string application_identifier, std::string ddi, std::string method_id, bool wait_for_debugger)
 {
 	if (!devices.count(device_identifier))
 	{
@@ -1260,7 +1260,7 @@ void start_app(std::string device_identifier, std::string application_identifier
 		}
 
 		std::string executable = map[application_identifier][kPathPascalCase] + "/" + map[application_identifier]["CFBundleExecutable"];
-		if (run_application(executable, (SOCKET)gdb, application_identifier, &devices[device_identifier]))
+		if (run_application(executable, (SOCKET)gdb, application_identifier, &devices[device_identifier], wait_for_debugger))
 			print(json({ { kResponse, "Successfully started application" },{ kId, method_id },{ kDeviceId, device_identifier } }));
 		else
 			print_error("Could not start application", device_identifier, method_id, kApplicationsCustomError);
@@ -1499,7 +1499,8 @@ int main()
 					std::string application_identifier = arg.value(kAppId, "");
 					std::string device_identifier = arg.value(kDeviceId, "");
 					std::string ddi = arg.value(kDeveloperDiskImage, "");
-					start_app(device_identifier, application_identifier, ddi, method_id);
+					std::string wait_for_debugger = arg.value(kWaitForDebugger, "");
+					start_app(device_identifier, application_identifier, ddi, method_id, wait_for_debugger == "true");
 				}
 			}
 			else if (method_name == "stop")

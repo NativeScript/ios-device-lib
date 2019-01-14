@@ -48,6 +48,7 @@ static const char *kId = "id";
 static const char *kNullMessageId = "null";
 static const char *kDeviceId = "deviceId";
 static const char *kDeveloperDiskImage = "ddi";
+static const char *kWaitForDebugger = "waitForDebugger";
 static const char *kAppId = "appId";
 static const char *kNotificationName = "notificationName";
 static const char *kDestination = "destination";
