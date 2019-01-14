@@ -11,3 +11,8 @@ DerivedData
 **/*.ipdb
 **/*.iobj
 .frameworks/*
+
+### Test files
+test/
+coverage/
+*.tgz
