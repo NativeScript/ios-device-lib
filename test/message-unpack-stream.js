@@ -1,5 +1,4 @@
 const { assert } = require("chai");
-const sinon = require("sinon");
 const bufferpack = require("bufferpack");
 const MessageUnpackStream = require("../message-unpack-stream").MessageUnpackStream;
 
