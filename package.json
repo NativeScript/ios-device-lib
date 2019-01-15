@@ -5,7 +5,9 @@
   "types": "./typings/ios-device-lib.d.ts",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepack": "npm test",
+    "mocha": "mocha",
+    "test": "istanbul cover ./node_modules/mocha/bin/_mocha"
   },
   "repository": {
     "type": "git",
@@ -20,5 +22,10 @@
   "dependencies": {
     "bufferpack": "0.0.6",
     "node-uuid": "1.4.7"
+  },
+  "devDependencies": {
+    "chai": "4.2.0",
+    "istanbul": "0.4.5",
+    "mocha": "5.2.0"
   }
 }

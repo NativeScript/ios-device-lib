@@ -275,7 +275,12 @@ xcuserdata/
 .DS_Store
 
 ### VS Code
-.vscode
+.vscode/**/*
+!.vscode/launch.json
 
 ### The following folder is present because of a workaround for MobileDevice.framework and Xcode 9.0
 .frameworks/*
+
+### Node.js files
+coverage/
+*.tgz
