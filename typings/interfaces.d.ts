@@ -49,8 +49,9 @@ declare global {
 		interface IDeleteFileData extends IAppDevice, IDestination {
 		}
 
-		interface IDdiApplicationData extends IAppDevice {
+		interface IIOSApplicationData extends IAppDevice {
 			ddi: string;
+			waitForDebugger?: string;
 		}
 
 		interface IPostNotificationData extends IDeviceId {
@@ -139,8 +140,8 @@ declare global {
 			postNotification(postNotificationArray: IPostNotificationData[]): Promise<IDeviceResponse>[];
 			awaitNotificationResponse(awaitNotificationResponseArray: IAwaitNotificatioNResponseData[]): Promise<IDeviceResponse>[];
 			apps(deviceIdentifiers: string[]): Promise<IDeviceAppInfo>[];
-			start(startArray: IDdiApplicationData[]): Promise<IDeviceResponse>[];
-			stop(stopArray: IDdiApplicationData[]): Promise<IDeviceResponse>[];
+			start(startArray: IIOSApplicationData[]): Promise<IDeviceResponse>[];
+			stop(stopArray: IIOSApplicationData[]): Promise<IDeviceResponse>[];
 			startDeviceLog(deviceIdentifiers: string[]): void;
 			connectToPort(connectToPortArray: IConnectToPortData[]): Promise<IConnectToPortResponse>[];
 			dispose(signal?: string): void;
