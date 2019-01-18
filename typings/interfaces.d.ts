@@ -49,8 +49,11 @@ declare global {
 		interface IDeleteFileData extends IAppDevice, IDestination {
 		}
 
-		interface IIOSApplicationData extends IAppDevice {
+		interface IDdiApplicationData extends IAppDevice {
 			ddi: string;
+		}
+
+		interface IIOSApplicationData extends IDdiApplicationData {
 			waitForDebugger?: string;
 		}
 
