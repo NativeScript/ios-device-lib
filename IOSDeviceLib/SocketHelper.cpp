@@ -75,22 +75,22 @@ std::map<std::string, boost::any> receive_message(SOCKET socket, int timeout)
 	return receive_message_core(socket);
 }
 
-Utf16Message* create_utf16_message(unsigned char *message, long long length)
+Utf16Message* create_utf16_message(const std::string& message)
 {
 	Utf16Message* result = new Utf16Message();
-	result->length = length;
 	result->message = message;
+
 	return result;
 }
 
-Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
+Utf16Message* receive_utf16_message(SOCKET fd, int size = 1024 * 1024)
 {
-	long long final_length = 0;
 	int bytes_read;
 
 	// We need to create new unsigned char[] here because if we don't
 	// the memcpy will fail with EXC_BAD_ACCESS
-	unsigned char *result = new unsigned char[0];
+	std::string result;
+	unsigned char *buffer = new unsigned char[size];
 
 	do
 	{
@@ -99,7 +99,6 @@ Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 		// the message can have length 2000 and we will try to call recv 3 times.
 		// We will stay forever at the 3d one because there will be no message in the socket.
 		int socket_state = get_socket_state(fd, 1);
-		unsigned char *buffer = new unsigned char[size];
 
 		// If the MSG_PEEK flag is set the recv function won't read the data from the socket.
 		// It will just return the size of the message in the socket.
@@ -111,10 +110,10 @@ Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 		{
 			delete[] buffer;
 			// Socket is closed.
-			if (final_length > 0)
+			if (result.length() > 0)
 			{
 				// Return the last received message before the socket was closed.
-				return create_utf16_message(result, final_length);
+				return create_utf16_message(result);
 			}
 			else
 			{
@@ -126,28 +125,17 @@ Utf16Message* receive_utf16_message(SOCKET fd, int size = 1000)
 
 		if (bytes_read > 0)
 		{
-			size_t temp_size = final_length + bytes_read;
-			unsigned char *temp = new unsigned char[temp_size + 1];
-
-			memcpy(temp, result, final_length);
-			memcpy(temp + final_length, buffer, bytes_read);
-
-			// Delete the result because we change it's address to temp's address.
-			delete[] result;
-			result = temp;
-			final_length += bytes_read;
+			result.append(buffer, buffer + bytes_read);
 		}
 		else if (bytes_read < 0)
 		{
 			delete[] buffer;
-			delete[] result;
 			return nullptr;
 		}
-
-		delete[] buffer;
 	} while (bytes_read == size);
 
-	return create_utf16_message(result, final_length);
+	delete[] buffer;
+	return create_utf16_message(result);
 }
 
 void proxy_socket_messages(SOCKET first, SOCKET second)
@@ -156,15 +144,14 @@ void proxy_socket_messages(SOCKET first, SOCKET second)
 
 	while ((message = receive_utf16_message(first)) != nullptr)
 	{
-		if (message->length)
+		if (message->message.length())
 		{
 #ifdef _WIN32
-			char* message_buffer = (char*)message->message;
+			char* message_buffer = (char*)message->message.c_str();
 #else
-			unsigned char* message_buffer = message->message;
+			const char* message_buffer = message->message.c_str();
 #endif // _WIN32
-
-			send(second, message_buffer, message->length, NULL);
+			send(second, message_buffer, message->message.length(), NULL);
 		}
 
 		// Delete the message to free the message->message memory.

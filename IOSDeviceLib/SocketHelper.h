@@ -17,6 +17,7 @@ typedef unsigned long long SOCKET;
 #endif
 
 #include <map>
+#include <string>
 #include <functional>
 #include "PlistCpp/include/boost/any.hpp"
 
@@ -31,13 +32,7 @@ struct LengthEncodedMessage {
 };
 
 struct Utf16Message {
-	unsigned char *message;
-	long long length;
-
-	~Utf16Message()
-	{
-		delete[] message;
-	}
+    std::string message;
 };
 
 LengthEncodedMessage get_message_with_encoded_length(const char* message, long long length = -1);
