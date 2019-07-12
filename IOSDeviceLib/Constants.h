@@ -16,7 +16,7 @@ static const unsigned kADNCIMessageDisconnected = 2;
 static const unsigned kADNCIMessageUnknown = 3;
 static const unsigned kADNCIMessageTrusted = 4;
 static const unsigned kDeviceLogBytesToRead = 1 << 10;
-static const unsigned kDeviceFileBytesToRead = 200;
+static const unsigned kDeviceFileBytesToRead = 1024 * 1024;
 static const size_t kDeviceUploadFilesBatchSize = 100;
 #ifdef _WIN32
 static const unsigned kCFStringEncodingUTF8 = 0x08000100;
