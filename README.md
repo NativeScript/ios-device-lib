@@ -192,8 +192,12 @@ After that the binary is ready to accept requests via its standart input. Curren
         {
           "appId": "com.sample.MyApp",
           "deviceId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-          "source": "Library\\\Application Support\\\LiveSync\\\app\\\app.js",
-          "destination": "D:\\\Downloads\\\app.js"
+          "files": [
+            {
+                "source": "Library\\\Application Support\\\LiveSync\\\app\\\app.js",
+                "destination": "D:\\\Downloads\\\app.js"
+            }
+          ]
         }
       ]
     }

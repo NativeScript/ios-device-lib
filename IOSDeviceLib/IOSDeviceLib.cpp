@@ -927,7 +927,6 @@ void read_file(std::string device_identifier, const char *application_identifier
 	}
 	
 	unsigned afcFileRefCloseResult = AFCFileRefClose(file->afc_conn_p, file->file_ref);
-	cleanup_file_resources(device_identifier, application_identifier);
 	
 	read_file_mutex.unlock();
 
@@ -1432,14 +1431,23 @@ int main()
 			{
 				for (json &arg : method_args)
 				{
-					if (!validate_device_id_and_attrs(arg, method_id, { kAppId , kDeviceId, kDestination }))
-						continue;
-
 					std::string application_identifier = arg.value(kAppId, "");
 					std::string device_identifier = arg.value(kDeviceId, "");
-					std::string source = arg.value(kSource, "");
-					std::string destination = arg.value(kDestination, "");
-					read_file(device_identifier, application_identifier.c_str(), source.c_str(), method_id, destination.c_str());
+					std::vector<json> files = arg.value(kFiles, json::array()).get<std::vector<json>>();
+
+					std::thread([=]() -> void {
+						for (json file : files) {
+							read_file(
+									device_identifier,
+									application_identifier.c_str(),
+									file.value(kSource, "").c_str(),
+									method_id,
+									file.value(kDestination, "").c_str()
+							);
+						}
+					}).detach();
+
+					cleanup_file_resources(device_identifier, application_identifier);
 				}
 			}
 			else if (method_name == "apps")

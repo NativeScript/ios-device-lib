@@ -46,6 +46,10 @@ declare global {
 			files: IFileData[];
 		}
 
+		interface IDownloadFilesData extends IAppDevice {
+			files: IFileData[];
+		}
+
 		interface IDeleteFileData extends IAppDevice, IDestination {
 		}
 
@@ -137,7 +141,7 @@ declare global {
 			uninstall(ipaPath: string, deviceIdentifiers: string[]): Promise<IDeviceResponse>[];
 			list(listArray: IReadOperationData[]): Promise<IDeviceMultipleResponse>[];
 			upload(uploadArray: IUploadFilesData[]): Promise<IDeviceResponse>[];
-			download(downloadArray: IFileOperationData[]): Promise<IDeviceResponse>[];
+			download(downloadArray: IDownloadFilesData[]): Promise<IDeviceResponse>[];
 			read(readArray: IReadOperationData[]): Promise<IDeviceResponse>[];
 			delete(deleteArray: IDeleteFileData[]): Promise<IDeviceResponse>[];
 			postNotification(postNotificationArray: IPostNotificationData[]): Promise<IDeviceResponse>[];
