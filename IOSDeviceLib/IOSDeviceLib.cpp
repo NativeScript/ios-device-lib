@@ -882,7 +882,7 @@ std::unique_ptr<afc_file> get_afc_file(std::string device_identifier, const char
 }
 
 std::mutex read_file_mutex;
-void read_file(std::string device_identifier, const char *application_identifier, const char *path, std::string method_id, const char *destination = nullptr) {
+void stdout_file_contents(std::string device_identifier, const char *application_identifier, const char *path, std::string method_id) {
 	read_file_mutex.lock();
 	
 	std::unique_ptr<afc_file> file = get_afc_file(device_identifier, application_identifier, path, method_id);
@@ -895,43 +895,57 @@ void read_file(std::string device_identifier, const char *application_identifier
 	size_t read_size = kDeviceFileBytesToRead;
 	std::string result;
 	char *buf;
-	if (destination)
-	{
-		// Write the contents of the source file to the destination
-		std::ofstream ostream;
-		ostream.open(destination);
-		do
-		{
-			buf = new char[kDeviceFileBytesToRead];
-			AFCFileRefRead(file->afc_conn_p, file->file_ref, buf, &read_size);
-			ostream.write(buf, read_size);
-			free(buf);
-		} while (read_size == kDeviceFileBytesToRead);
 
-		ostream.close();
-		result = std::string("File written successfully!");
-	}
-	else
+	std::vector<char> file_contents;
+	do
 	{
-		// Pipe the contents of the file to the stdout
-		std::vector<char> file_contents;
-		do
-		{
-			buf = new char[kDeviceFileBytesToRead];
-			AFCFileRefRead(file->afc_conn_p, file->file_ref, buf, &read_size);
-			file_contents.insert(file_contents.end(), buf, buf + read_size);
-			free(buf);
-		} while (read_size == kDeviceFileBytesToRead);
+		buf = new char[kDeviceFileBytesToRead];
+		AFCFileRefRead(file->afc_conn_p, file->file_ref, buf, &read_size);
+		file_contents.insert(file_contents.end(), buf, buf + read_size);
+		free(buf);
+	} while (read_size == kDeviceFileBytesToRead);
 
-		result = std::string(file_contents.begin(), file_contents.end());
-	}
+	result = std::string(file_contents.begin(), file_contents.end());
 	
 	unsigned afcFileRefCloseResult = AFCFileRefClose(file->afc_conn_p, file->file_ref);
-	
+	cleanup_file_resources(device_identifier, application_identifier);
+
 	read_file_mutex.unlock();
 
 	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(afcFileRefCloseResult, "Could not close file reference", device_identifier, method_id);
 	print(json({{ kResponse, result },{ kId, method_id },{ kDeviceId, device_identifier } }));
+}
+
+void copy_file(std::string device_identifier, const char *application_identifier, const char *path, std::string method_id, const char *destination = nullptr) {
+	read_file_mutex.lock();
+
+	std::unique_ptr<afc_file> file = get_afc_file(device_identifier, application_identifier, path, method_id);
+	if (!file)
+	{
+		read_file_mutex.unlock();
+		return;
+	}
+
+	size_t read_size = kDeviceFileBytesToRead;
+	char *buf;
+
+	std::ofstream ostream;
+	ostream.open(destination);
+	do
+	{
+		buf = new char[kDeviceFileBytesToRead];
+		AFCFileRefRead(file->afc_conn_p, file->file_ref, buf, &read_size);
+		ostream.write(buf, read_size);
+		free(buf);
+	} while (read_size == kDeviceFileBytesToRead);
+
+	ostream.close();
+
+	unsigned afcFileRefCloseResult = AFCFileRefClose(file->afc_conn_p, file->file_ref);
+
+	read_file_mutex.unlock();
+
+	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(afcFileRefCloseResult, "Could not close file reference", device_identifier, method_id);
 }
 
 void get_application_infos(std::string device_identifier, std::string method_id)
@@ -1424,7 +1438,7 @@ int main()
 					std::string application_identifier = arg.value(kAppId, "");
 					std::string device_identifier = arg.value(kDeviceId, "");
 					std::string path = arg.value(kPathLowerCase, "");
-					read_file(device_identifier, application_identifier.c_str(), path.c_str(), method_id);
+					stdout_file_contents(device_identifier, application_identifier.c_str(), path.c_str(), method_id);
 				}
 			}
 			else if (method_name == "download")
@@ -1437,7 +1451,7 @@ int main()
 
 					std::thread([=]() -> void {
 						for (json file : files) {
-							read_file(
+							copy_file(
 									device_identifier,
 									application_identifier.c_str(),
 									file.value(kSource, "").c_str(),
@@ -1445,9 +1459,11 @@ int main()
 									file.value(kDestination, "").c_str()
 							);
 						}
-					}).detach();
 
-					cleanup_file_resources(device_identifier, application_identifier);
+						cleanup_file_resources(device_identifier, application_identifier);
+
+						print(json({{ kResponse, "Files written successfully!" },{ kId, method_id },{ kDeviceId, device_identifier } }));
+					}).detach();
 				}
 			}
 			else if (method_name == "apps")
