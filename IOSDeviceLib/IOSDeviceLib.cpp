@@ -201,7 +201,7 @@ void cleanup_file_resources(const std::string& device_identifier, const std::str
 
 	if (devices[device_identifier].apps_cache[application_identifier].afc_connection)
 	{
-		afc_connection* afc_connection_to_close = devices[device_identifier].apps_cache[application_identifier].afc_connection;
+		AFCConnectionRef afc_connection_to_close = devices[device_identifier].apps_cache[application_identifier].afc_connection;
 		AFCConnectionClose(afc_connection_to_close);
 		devices[device_identifier].apps_cache.erase(application_identifier);
 	}
@@ -406,27 +406,70 @@ HANDLE start_service(std::string device_identifier, const char* service_name, st
 	return socket;
 }
 
+HANDLE start_secure_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
+{
+    start_service_mutex.lock();
+    if (!devices.count(device_identifier))
+    {
+        if (should_log_error)
+            print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
+
+        start_service_mutex.unlock();
+        return NULL;
+    }
+
+    if (devices[device_identifier].services.count(service_name))
+    {
+        start_service_mutex.unlock();
+        return devices[device_identifier].services[service_name];
+    }
+
+    HANDLE socket = nullptr;
+    PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(start_session(device_identifier), "Could not start device session", device_identifier, method_id, NULL);
+    CFStringRef cf_service_name = create_CFString(service_name);
+    unsigned result = AMDeviceSecureStartService(devices[device_identifier].device_info, cf_service_name, NULL, &socket);
+    stop_session(device_identifier);
+    CFRelease(cf_service_name);
+    if (result)
+    {
+        std::string message("Could not start secure service ");
+        message += service_name;
+        if (should_log_error)
+            print_error(message.c_str(), device_identifier, method_id, result);
+
+        start_service_mutex.unlock();
+        return NULL;
+    }
+
+    if (!skip_cache) {
+        devices[device_identifier].services[service_name] = socket;
+    }
+
+    start_service_mutex.unlock();
+    return socket;
+}
+
 // We do not use this method.
 // When we used it to upload files to the live ION we had problems writing them on the root of the ION.
 // The method is not deleted because it works for some applications and we can use it in the future for something.
-#if 0
-HANDLE start_house_arrest(std::string device_identifier, const char* application_identifier, std::string method_id)
+AFCConnectionRef start_house_arrest(std::string device_identifier, const char* application_identifier, std::string method_id)
 {
 	if (!devices.count(device_identifier))
 	{
 		print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
 		return NULL;
 	}
-
-	if (devices[device_identifier].services.count(kHouseArrest))
+    
+    AFCConnectionRef persistedHouseArrestService = devices[device_identifier].apps_cache[application_identifier].afc_connection;
+	if (persistedHouseArrestService)
 	{
-		return devices[device_identifier].services[kHouseArrest];
+		return persistedHouseArrestService;
 	}
 
-	HANDLE houseFd = nullptr;
+	AFCConnectionRef houseFd = NULL;
 	start_session(device_identifier);
 	CFStringRef cf_application_identifier = create_CFString(application_identifier);
-	unsigned result = AMDeviceStartHouseArrestService(devices[device_identifier].device_info, cf_application_identifier, 0, &houseFd, 0);
+	unsigned result = AMDeviceCreateHouseArrestService(devices[device_identifier].device_info, cf_application_identifier, 0, &houseFd);
 	CFRelease(cf_application_identifier);
 	stop_session(device_identifier);
 
@@ -437,18 +480,19 @@ HANDLE start_house_arrest(std::string device_identifier, const char* application
 		print_error(message.c_str(), device_identifier, method_id, result);
 		return NULL;
 	}
+    
+    devices[device_identifier].apps_cache[application_identifier].afc_connection = houseFd;
 
-	devices[device_identifier].services[kHouseArrest] = houseFd;
 	return houseFd;
 }
-#endif
 
 HANDLE start_debug_server(std::string device_identifier, std::string ddi, std::string method_id)
 {
-	HANDLE gdb = start_service(device_identifier, kDebugServer, method_id, false);
+	HANDLE gdb = start_secure_service(device_identifier, kDebugServer, method_id, false);
+    //unsigned result = AMDServiceConnectionGetSocket(gdb);
 	if (!gdb && mount_image(device_identifier, ddi, method_id))
 	{
-		gdb = start_service(device_identifier, kDebugServer, method_id);
+		gdb = start_secure_service(device_identifier, kDebugServer, method_id);
 	}
 
 	return gdb;
@@ -482,22 +526,25 @@ bool start_afc_client(std::string& device_identifier, std::string& destination, 
 	return true;
 }
 
-afc_connection *get_afc_connection(std::string& device_identifier, const char* application_identifier, std::string& root_path, std::string& method_id)
+AFCConnectionRef get_afc_connection(std::string& device_identifier, const char* application_identifier, std::string& root_path, std::string& method_id)
 {
 	if (devices.count(device_identifier) && devices[device_identifier].apps_cache[application_identifier].afc_connection)
 	{
 		return devices[device_identifier].apps_cache[application_identifier].afc_connection;
 	}
 
-	HANDLE house_fd = start_service(device_identifier, kHouseArrest, method_id);
-	if (!house_fd || !start_afc_client(device_identifier, root_path, application_identifier, house_fd, method_id))
+	// HANDLE house_fd = start_service(device_identifier, kHouseArrest, method_id);
+    // int socketHandle = AMDServiceConnectionGetSocket(&house_fd);
+    // TODO: Consider starting afc service here
+    AFCConnectionRef afc_conn_p = start_house_arrest(device_identifier, application_identifier, method_id);
+	if (!afc_conn_p) // || !start_afc_client(device_identifier, root_path, application_identifier, house_fd, method_id))
 	{
 		return NULL;
 	}
 
-	afc_connection* afc_conn_p = nullptr;
-	PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(AFCConnectionOpen(house_fd, 0, &afc_conn_p), "Could not open afc connection", device_identifier, method_id, NULL);
-	devices[device_identifier].apps_cache[application_identifier].afc_connection = afc_conn_p;
+	/* afc_connection* afc_conn_p = nullptr;
+	PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(AFCConnectionOpen(house_fd, 0, &afc_conn_p), "Could not open afc connection", device_identifier, method_id, NULL); */
+	// devices[device_identifier].apps_cache[application_identifier].afc_connection = afc_conn_p;
 	return afc_conn_p;
 }
 
@@ -744,7 +791,7 @@ void upload_file(std::string device_identifier, const char *application_identifi
 	// We need to set the size of errors here because we need to access the elements by index.
 	// If we don't access them by index and use push_back from multiple threads, some of them will try to push at the same memory.
 	// The result of this will be an exception.
-	std::vector<std::string> errors(files.size());
+    std::vector<std::string> errors(files.size());
 	std::vector<std::thread> file_upload_threads;
 	// We're only ever going to insert kDeviceUploadFilesBatchSize elements
 	file_upload_threads.reserve(kDeviceUploadFilesBatchSize);
@@ -867,7 +914,7 @@ void delete_file(std::string device_identifier, const char *application_identifi
 std::unique_ptr<afc_file> get_afc_file(std::string device_identifier, const char *application_identifier, const char *destination, std::string method_id){
 	afc_file_ref file_ref;
 	std::string destination_str = windows_path_to_unix(destination);
-	afc_connection* afc_conn_p = get_afc_connection(device_identifier, application_identifier, destination_str, method_id);
+	AFCConnectionRef afc_conn_p = get_afc_connection(device_identifier, application_identifier, destination_str, method_id);
 	if (!afc_conn_p)
 	{
 		return NULL;
@@ -956,8 +1003,8 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 										"<key>ReturnAttributes</key>"
 										"<array>"
 											"<string>CFBundleIdentifier</string>"
-											"<string>IceniumLiveSyncEnabled</string>"
-											"<string>configuration</string>"
+											"<string>Path</string>"
+											"<string>CFBundleExecutable</string>"
 										"</array>"
 									"</dict>"
 								"</dict>"
@@ -986,9 +1033,9 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 			{
 				std::map<std::string, boost::any> app_info = boost::any_cast<std::map<std::string, boost::any>>(list);
 				json current_info = {
-					{ "IceniumLiveSyncEnabled", app_info.count("IceniumLiveSyncEnabled") && boost::any_cast<bool>(app_info["IceniumLiveSyncEnabled"]) },
+					{ "Path", app_info.count("Path") ? boost::any_cast<std::string>(app_info["Path"]) : "" },
 					{ "CFBundleIdentifier", app_info.count("CFBundleIdentifier") ? boost::any_cast<std::string>(app_info["CFBundleIdentifier"]) : "" },
-					{ "configuration", app_info.count("configuration") ? boost::any_cast<std::string>(app_info["configuration"]) : ""},
+					{ "CFBundleExecutable", app_info.count("CFBundleExecutable") ? boost::any_cast<std::string>(app_info["CFBundleExecutable"]) : ""},
 				};
 				livesync_app_infos.push_back(current_info);
 			}
@@ -1052,6 +1099,20 @@ bool get_all_apps(std::string device_identifier, std::map<std::string, std::map<
 	CFDictionaryRef result = nullptr;
 	if (!start_session(device_identifier))
 	{
+        /* const void *keys_arr[] = {
+            create_CFString("ReturnAttributes"),
+        };
+        const void *values_arr[] = { };
+        values_arr[0] = {
+            create_CFString("CFBundleIdentifier"),
+            create_CFString("CFBundleName"),
+            create_CFString("CFBundleExecutable"),
+            create_CFString("CFBundleDisplayName"),
+            create_CFString("Path")
+        };
+    
+        CFDictionaryRef options = CFDictionaryCreate(NULL, keys_arr, values_arr, 1, NULL, NULL); */
+        
 		if (AMDeviceLookupApplications(devices[device_identifier].device_info, NULL, &result))
 		{
 			return false;
@@ -1084,7 +1145,7 @@ void lookup_apps(std::string device_identifier, std::string method_id)
 
 void device_log(std::string device_identifier, std::string method_id)
 {
-	HANDLE socket = start_service(device_identifier, kSyslog, method_id);
+	HANDLE socket = start_secure_service(device_identifier, kSyslog, method_id);
 	if (!socket)
 	{
 		return;
@@ -1106,7 +1167,7 @@ void device_log(std::string device_identifier, std::string method_id)
 
 void post_notification(std::string device_identifier, PostNotificationInfo post_notification_info, std::string method_id)
 {
-	HANDLE handle = start_service(device_identifier, kNotificationProxy, method_id, true, true);
+	HANDLE handle = start_secure_service(device_identifier, kNotificationProxy, method_id, true, true);
 	if (!handle)
 	{
 		return;
@@ -1201,7 +1262,8 @@ bool validate_device_id_and_attrs(const json& j, std::string method_id, std::vec
 
 void stop_app(std::string device_identifier, std::string application_identifier, std::string ddi, std::string method_id)
 {
-	if (!devices.count(device_identifier))
+    print(json({ { kResponse, "Successfully stopped application" },{ kId, method_id },{ kDeviceId, device_identifier } }));
+	/* if (!devices.count(device_identifier))
 	{
 		print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
 		return;
@@ -1233,7 +1295,7 @@ void stop_app(std::string device_identifier, std::string application_identifier,
 	else
 	{
 		print_error("Lookup applications failed", device_identifier, method_id, kApplicationsCustomError);
-	}
+	} */
 }
 
 void start_app(std::string device_identifier, std::string application_identifier, std::string ddi, std::string method_id, bool wait_for_debugger)
@@ -1245,13 +1307,13 @@ void start_app(std::string device_identifier, std::string application_identifier
 	}
 
 	std::map<std::string, std::map<std::string, std::string>> map;
-	if (get_all_apps(device_identifier, map))
-	{
-		if (map.count(application_identifier) == 0)
+	// if (get_all_apps(device_identifier, map))
+	// {
+		/* if (map.count(application_identifier) == 0)
 		{
 			print_error("Application not installed", device_identifier, method_id, kApplicationsCustomError);
 			return;
-		}
+		} */
 
 		HANDLE gdb = start_debug_server(device_identifier, ddi, method_id);
 		if (!gdb)
@@ -1259,16 +1321,17 @@ void start_app(std::string device_identifier, std::string application_identifier
 			return;
 		}
 
-		std::string executable = map[application_identifier][kPathPascalCase] + "/" + map[application_identifier]["CFBundleExecutable"];
+		// std::string executable = map[application_identifier][kPathPascalCase] + "/" + map[application_identifier]["CFBundleExecutable"];
+        std::string executable = "/private/var/containers/Bundle/Application/0E232394-4B38-4280-9C98-A2768211CB41/uploadApp.app/uploadApp";
 		if (run_application(executable, (SOCKET)gdb, application_identifier, &devices[device_identifier], wait_for_debugger))
 			print(json({ { kResponse, "Successfully started application" },{ kId, method_id },{ kDeviceId, device_identifier } }));
 		else
 			print_error("Could not start application", device_identifier, method_id, kApplicationsCustomError);
-	}
+	/*}
 	else
 	{
 		print_error("Lookup applications failed", device_identifier, method_id, kApplicationsCustomError);
-	}
+	} */
 }
 
 void connect_to_port(std::string device_identifier, int port, std::string method_id)

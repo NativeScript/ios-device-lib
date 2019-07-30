@@ -78,6 +78,8 @@ struct afc_connection {
 	unsigned int context;           /* 40 */
 };
 
+typedef struct afc_connection * AFCConnectionRef;
+
 struct afc_dictionary {
 	unsigned char unknown[0];   /* size unknown */
 };
@@ -92,7 +94,7 @@ struct afc_file {
 };
 
 struct ApplicationCache {
-	afc_connection* afc_connection;
+	AFCConnectionRef afc_connection;
 	bool has_initialized_gdb;
 };
 
@@ -234,7 +236,10 @@ extern "C"
 	CFStringRef AMDeviceCopyDeviceIdentifier(const DeviceInfo*);
 	CFStringRef AMDeviceCopyValue(const DeviceInfo*, CFStringRef, CFStringRef);
 	unsigned AMDeviceMountImage(const DeviceInfo*, CFStringRef, CFDictionaryRef, void(*f)(void*, int), void*);
-	unsigned AMDeviceStartService(const DeviceInfo*, CFStringRef, HANDLE*, void*);
+    unsigned AMDeviceStartService(const DeviceInfo*, CFStringRef, HANDLE*, void*);
+    unsigned AMDeviceSecureStartService(const DeviceInfo*, CFStringRef, HANDLE*, HANDLE*);
+    unsigned AMDeviceCreateHouseArrestService(const DeviceInfo*, CFStringRef identifier, void * unknown, AFCConnectionRef * handle);
+    unsigned AMDServiceConnectionGetSocket(HANDLE*);
 	unsigned AMDeviceLookupApplications(const DeviceInfo*, CFDictionaryRef, CFDictionaryRef*);
 	int AMDeviceGetConnectionID(const DeviceInfo*);
 	int AMDeviceGetInterfaceType(const DeviceInfo*);
@@ -251,17 +256,17 @@ extern "C"
 	unsigned AMDeviceSecureInstallApplication(int, const DeviceInfo*, CFURLRef, CFDictionaryRef, void(*f)(), int);
 	unsigned AMDeviceStartHouseArrestService(const DeviceInfo*, CFStringRef, void*, HANDLE*, unsigned int*);
 	unsigned AFCConnectionOpen(HANDLE, const char*, void*);
-	unsigned AFCConnectionClose(afc_connection*);
-	unsigned AFCRemovePath(afc_connection*, const char*);
-	unsigned AFCFileInfoOpen(afc_connection*, const char*, afc_dictionary**);
-	unsigned AFCDirectoryRead(afc_connection*, afc_directory*, char**);
-	unsigned AFCDirectoryOpen(afc_connection*, const char*, afc_directory**);
-	unsigned AFCDirectoryClose(afc_connection*, afc_directory*);
-	unsigned AFCDirectoryCreate(afc_connection*, const char*);
-	unsigned AFCFileRefOpen(afc_connection*, const char*, unsigned long long, afc_file_ref*);
-	unsigned AFCFileRefRead(afc_connection*, afc_file_ref, void*, size_t*);
-	unsigned AFCFileRefWrite(afc_connection*, afc_file_ref, const void*, size_t);
-	unsigned AFCFileRefClose(afc_connection*, afc_file_ref);
+	unsigned AFCConnectionClose(AFCConnectionRef conn);
+	unsigned AFCRemovePath(AFCConnectionRef conn, const char*);
+	unsigned AFCFileInfoOpen(AFCConnectionRef conn, const char*, afc_dictionary**);
+	unsigned AFCDirectoryRead(AFCConnectionRef conn, afc_directory*, char**);
+	unsigned AFCDirectoryOpen(AFCConnectionRef conn, const char*, afc_directory**);
+	unsigned AFCDirectoryClose(AFCConnectionRef conn, afc_directory*);
+	unsigned AFCDirectoryCreate(AFCConnectionRef conn, const char*);
+	unsigned AFCFileRefOpen(AFCConnectionRef conn, const char*, unsigned long long, afc_file_ref*);
+	unsigned AFCFileRefRead(AFCConnectionRef conn, afc_file_ref, void*, size_t*);
+	unsigned AFCFileRefWrite(AFCConnectionRef conn, afc_file_ref, const void*, size_t);
+	unsigned AFCFileRefClose(AFCConnectionRef conn, afc_file_ref);
 	unsigned USBMuxConnectByPort(int, int, long long*);
 }
 
