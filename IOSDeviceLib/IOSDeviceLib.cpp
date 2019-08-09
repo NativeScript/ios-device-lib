@@ -125,10 +125,11 @@ int start_session(std::string& device_identifier)
 	{
 		const DeviceInfo* device_info = devices[device_identifier].device_info;
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceConnect(device_info), start_session_mutex);
-		if (!AMDeviceIsPaired(device_info))
-		{
-			UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDevicePair(device_info), start_session_mutex);
-		}
+        assert(AMDeviceIsPaired(device_info));
+//		if (!AMDeviceIsPaired(device_info))
+//		{
+//			UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDevicePair(device_info), start_session_mutex);
+//		}
 
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceValidatePairing(device_info), start_session_mutex);
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceStartSession(device_info), start_session_mutex);
@@ -201,7 +202,7 @@ void cleanup_file_resources(const std::string& device_identifier, const std::str
 
 	if (devices[device_identifier].apps_cache[application_identifier].afc_connection)
 	{
-		afc_connection* afc_connection_to_close = devices[device_identifier].apps_cache[application_identifier].afc_connection;
+		AFCConnectionRef afc_connection_to_close = devices[device_identifier].apps_cache[application_identifier].afc_connection;
 		AFCConnectionClose(afc_connection_to_close);
 		devices[device_identifier].apps_cache.erase(application_identifier);
 	}
@@ -363,54 +364,107 @@ void start_run_loop()
 }
 
 std::mutex start_service_mutex;
-HANDLE start_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
+
+HANDLE start_secure_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
 {
-	start_service_mutex.lock();
-	if (!devices.count(device_identifier))
-	{
-		if (should_log_error)
-			print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
+    start_service_mutex.lock();
+    if (!devices.count(device_identifier))
+    {
+        if (should_log_error)
+            print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
 
-		start_service_mutex.unlock();
-		return NULL;
-	}
+        start_service_mutex.unlock();
+        return NULL;
+    }
 
-	if (devices[device_identifier].services.count(service_name))
-	{
-		start_service_mutex.unlock();
-		return devices[device_identifier].services[service_name];
-	}
+    if (devices[device_identifier].services.count(service_name))
+    {
+        start_service_mutex.unlock();
+        return devices[device_identifier].services[service_name];
+    }
 
-	HANDLE socket = nullptr;
-	PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(start_session(device_identifier), "Could not start device session", device_identifier, method_id, NULL);
-	CFStringRef cf_service_name = create_CFString(service_name);
-	unsigned result = AMDeviceStartService(devices[device_identifier].device_info, cf_service_name, &socket, NULL);
-	stop_session(device_identifier);
-	CFRelease(cf_service_name);
-	if (result)
-	{
-		std::string message("Could not start service ");
-		message += service_name;
-		if (should_log_error)
-			print_error(message.c_str(), device_identifier, method_id, result);
+    PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(start_session(device_identifier), "Could not start device session", device_identifier, method_id, NULL);
+    CFStringRef cf_service_name = create_CFString(service_name);
+   
+    
+    
+    
+    
+    //unsigned result = AMDeviceStartService(devices[device_identifier].device_info, cf_service_name, &socket, NULL);
+    
+    
+    ServiceConnRef con;
+    unsigned result = AMDeviceSecureStartService(devices[device_identifier].device_info, cf_service_name, NULL, &con);
+    service_conn_t socket = (void*)AMDServiceConnectionGetSocket(con);
 
-		start_service_mutex.unlock();
-		return NULL;
-	}
+     
+    stop_session(device_identifier);
+    CFRelease(cf_service_name);
+    if (result)
+    {
+        std::string message("Could not start service ");
+        message += service_name;
+        if (should_log_error)
+            print_error(message.c_str(), device_identifier, method_id, result);
 
-	if (!skip_cache) {
-		devices[device_identifier].services[service_name] = socket;
-	}
+        start_service_mutex.unlock();
+        return NULL;
+    }
 
-	start_service_mutex.unlock();
-	return socket;
+    if (!skip_cache) {
+        devices[device_identifier].services[service_name] = socket;
+    }
+
+    start_service_mutex.unlock();
+    return socket;
 }
 
-// We do not use this method.
-// When we used it to upload files to the live ION we had problems writing them on the root of the ION.
-// The method is not deleted because it works for some applications and we can use it in the future for something.
-#if 0
-HANDLE start_house_arrest(std::string device_identifier, const char* application_identifier, std::string method_id)
+HANDLE start_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
+{
+    return start_secure_service(device_identifier, service_name, method_id, should_log_error, skip_cache);
+    start_service_mutex.lock();
+    if (!devices.count(device_identifier))
+    {
+        if (should_log_error)
+            print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
+
+        start_service_mutex.unlock();
+        return NULL;
+    }
+
+    if (devices[device_identifier].services.count(service_name))
+    {
+        start_service_mutex.unlock();
+        return devices[device_identifier].services[service_name];
+    }
+
+    HANDLE socket = nullptr;
+    PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(start_session(device_identifier), "Could not start device session", device_identifier, method_id, NULL);
+    CFStringRef cf_service_name = create_CFString(service_name);
+    unsigned result = AMDeviceStartService(devices[device_identifier].device_info, cf_service_name, &socket, NULL);
+    stop_session(device_identifier);
+    CFRelease(cf_service_name);
+    if (result)
+    {
+        std::string message("Could not start service ");
+        message += service_name;
+        if (should_log_error)
+            print_error(message.c_str(), device_identifier, method_id, result);
+
+        start_service_mutex.unlock();
+        return NULL;
+    }
+
+    if (!skip_cache) {
+        devices[device_identifier].services[service_name] = socket;
+    }
+
+    start_service_mutex.unlock();
+    return socket;
+}
+
+
+AFCConnectionRef start_house_arrest(std::string device_identifier, const char* application_identifier, std::string method_id)
 {
 	if (!devices.count(device_identifier))
 	{
@@ -418,17 +472,19 @@ HANDLE start_house_arrest(std::string device_identifier, const char* application
 		return NULL;
 	}
 
-	if (devices[device_identifier].services.count(kHouseArrest))
+    AFCConnectionRef persistedHouseArrestService = devices[device_identifier].apps_cache[application_identifier].afc_connection;
+	if (persistedHouseArrestService)
 	{
-		return devices[device_identifier].services[kHouseArrest];
+        return persistedHouseArrestService;
 	}
 
-	HANDLE houseFd = nullptr;
+	AFCConnectionRef conn = NULL;
 	start_session(device_identifier);
 	CFStringRef cf_application_identifier = create_CFString(application_identifier);
-	unsigned result = AMDeviceStartHouseArrestService(devices[device_identifier].device_info, cf_application_identifier, 0, &houseFd, 0);
-	CFRelease(cf_application_identifier);
+    unsigned result = AMDeviceCreateHouseArrestService(devices[device_identifier].device_info, cf_application_identifier, 0, &conn);
+    
 	stop_session(device_identifier);
+    CFRelease(cf_application_identifier);
 
 	if (result)
 	{
@@ -438,17 +494,16 @@ HANDLE start_house_arrest(std::string device_identifier, const char* application
 		return NULL;
 	}
 
-	devices[device_identifier].services[kHouseArrest] = houseFd;
-	return houseFd;
+	devices[device_identifier].services[kHouseArrest] = conn;
+	return conn;
 }
-#endif
 
 HANDLE start_debug_server(std::string device_identifier, std::string ddi, std::string method_id)
 {
-	HANDLE gdb = start_service(device_identifier, kDebugServer, method_id, false);
+	HANDLE gdb = start_secure_service(device_identifier, kDebugServer, method_id, false, false);
 	if (!gdb && mount_image(device_identifier, ddi, method_id))
 	{
-		gdb = start_service(device_identifier, kDebugServer, method_id);
+		gdb = start_secure_service(device_identifier, kDebugServer, method_id, true, false);
 	}
 
 	return gdb;
@@ -482,23 +537,22 @@ bool start_afc_client(std::string& device_identifier, std::string& destination, 
 	return true;
 }
 
-afc_connection *get_afc_connection(std::string& device_identifier, const char* application_identifier, std::string& root_path, std::string& method_id)
+AFCConnectionRef get_afc_connection(std::string& device_identifier, const char* application_identifier, std::string& root_path, std::string& method_id)
 {
 	if (devices.count(device_identifier) && devices[device_identifier].apps_cache[application_identifier].afc_connection)
 	{
 		return devices[device_identifier].apps_cache[application_identifier].afc_connection;
 	}
 
-	HANDLE house_fd = start_service(device_identifier, kHouseArrest, method_id);
-	if (!house_fd || !start_afc_client(device_identifier, root_path, application_identifier, house_fd, method_id))
+    
+	AFCConnectionRef con_ref = start_house_arrest(device_identifier, application_identifier, method_id);
+	if (!con_ref)
 	{
 		return NULL;
 	}
 
-	afc_connection* afc_conn_p = nullptr;
-	PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(AFCConnectionOpen(house_fd, 0, &afc_conn_p), "Could not open afc connection", device_identifier, method_id, NULL);
-	devices[device_identifier].apps_cache[application_identifier].afc_connection = afc_conn_p;
-	return afc_conn_p;
+	devices[device_identifier].apps_cache[application_identifier].afc_connection = con_ref;
+	return con_ref;
 }
 
 void uninstall_application(std::string application_identifier, std::string device_identifier, std::string method_id)
@@ -616,7 +670,7 @@ void perform_detached_operation(void(*operation)(std::string, std::string, std::
 		std::thread([operation, first_arg, device_identifier, method_id]() { operation(first_arg, device_identifier, method_id);  }).detach();
 }
 
-void read_dir(afc_connection* afc_conn_p, const char* dir, json &files, std::stringstream &errors, std::string method_id, std::string device_identifier)
+void read_dir(AFCConnectionRef afc_conn_p, const char* dir, json &files, std::stringstream &errors, std::string method_id, std::string device_identifier)
 {
 	char *dir_ent;
 	files.push_back(dir);
@@ -677,7 +731,7 @@ void list_files(std::string device_identifier, const char *application_identifie
 	list_files_mutex.lock();
 
 	std::string device_root(device_path);
-	afc_connection* afc_conn_p = get_afc_connection(device_identifier, application_identifier, device_root, method_id);
+	AFCConnectionRef afc_conn_p = get_afc_connection(device_identifier, application_identifier, device_root, method_id);
 	if (!afc_conn_p)
 	{
 		print_error("Could not establish AFC Connection", device_identifier, method_id);
@@ -703,7 +757,7 @@ void list_files(std::string device_identifier, const char *application_identifie
 	list_files_mutex.unlock();
 }
 
-bool ensure_device_path_exists(std::string &device_path, afc_connection *connection)
+bool ensure_device_path_exists(std::string &device_path, AFCConnectionRef connection)
 {
 	std::vector<std::string> directories = split(device_path, kUnixPathSeparator);
 	std::string curent_device_path("");
@@ -733,7 +787,7 @@ void upload_file(std::string device_identifier, const char *application_identifi
 	upload_file_mutex.lock();
 
 	std::string afc_destination_str = windows_path_to_unix(files[0].destination);
-	afc_connection* afc_conn_p = get_afc_connection(device_identifier, application_identifier, afc_destination_str, method_id);
+	AFCConnectionRef afc_conn_p = get_afc_connection(device_identifier, application_identifier, afc_destination_str, method_id);
 	if (!afc_conn_p)
 	{
 		upload_file_mutex.unlock();
@@ -843,7 +897,7 @@ void delete_file(std::string device_identifier, const char *application_identifi
 	delete_file_mutex.lock();
 	
 	std::string destination_str = windows_path_to_unix(destination);
-	afc_connection* afc_conn_p = get_afc_connection(device_identifier, application_identifier, destination_str, method_id);
+	AFCConnectionRef afc_conn_p = get_afc_connection(device_identifier, application_identifier, destination_str, method_id);
 	if (!afc_conn_p)
 	{
 		delete_file_mutex.unlock();
@@ -867,7 +921,7 @@ void delete_file(std::string device_identifier, const char *application_identifi
 std::unique_ptr<afc_file> get_afc_file(std::string device_identifier, const char *application_identifier, const char *destination, std::string method_id){
 	afc_file_ref file_ref;
 	std::string destination_str = windows_path_to_unix(destination);
-	afc_connection* afc_conn_p = get_afc_connection(device_identifier, application_identifier, destination_str, method_id);
+	AFCConnectionRef afc_conn_p = get_afc_connection(device_identifier, application_identifier, destination_str, method_id);
 	if (!afc_conn_p)
 	{
 		return NULL;
