@@ -23,13 +23,11 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 			this._distributeMessage(this._parseMessageFromBuffer(data));
 		});
 
-		if (this._showDebugInformation) {
-			const stderrMessageUnpackStream = new MessageUnpackStream();
-			this._chProc.stderr.pipe(stderrMessageUnpackStream);
-			stderrMessageUnpackStream.on("data", (data) => {
-				console.log("TRACE: ", data && data.toString());
-			});
-		}
+		// if (this._showDebugInformation) {
+		this._chProc.stderr.on("data", (data) => {
+			console.log("*************************** STD_ERROR: ", data && data.toString());
+		});
+		// }
 	}
 
 	writeData(data) {

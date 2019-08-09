@@ -4,11 +4,6 @@
   "description": "",
   "types": "./typings/ios-device-lib.d.ts",
   "main": "index.js",
-  "scripts": {
-    "prepack": "npm test",
-    "mocha": "mocha",
-    "test": "istanbul cover ./node_modules/mocha/bin/_mocha"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/telerik/ios-device-lib.git"

@@ -167,7 +167,9 @@ class IOSDeviceLib extends EventEmitter {
 	}
 
 	_getMessage(id, name, args) {
-		return JSON.stringify({ methods: [{ id: id, name: name, args: args }] }) + '\n';
+		const data = JSON.stringify({ methods: [{ id: id, name: name, args: args }] }) + `\n`;
+		console.log(`Sending data:\n${data}`);
+		return data;
 	}
 }
 
