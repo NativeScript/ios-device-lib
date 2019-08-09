@@ -63,6 +63,7 @@ struct LiveSyncApplicationInfo {
 
 typedef unsigned long long afc_file_ref;
 
+
 struct afc_connection {
 	unsigned int handle;            /* 0 */
 	unsigned int unknown0;          /* 4 */
@@ -78,6 +79,8 @@ struct afc_connection {
 	unsigned int context;           /* 40 */
 };
 
+typedef struct afc_connection * AFCConnectionRef;
+
 struct afc_dictionary {
 	unsigned char unknown[0];   /* size unknown */
 };
@@ -88,18 +91,27 @@ struct afc_directory {
 
 struct afc_file {
 	afc_file_ref file_ref;
-	afc_connection* afc_conn_p;
+	AFCConnectionRef afc_conn_p;
 };
 
 struct ApplicationCache {
-	afc_connection* afc_connection;
+	AFCConnectionRef afc_connection;
 	bool has_initialized_gdb;
+};
+
+typedef HANDLE service_conn_t;
+typedef service_conn_t * ServiceConnRef;
+typedef struct DeviceInfo * AMDeviceRef;
+struct ServiceInfo {
+    HANDLE socket;
+    ServiceConnRef connection;
+    int connection_id;
 };
 
 struct DeviceData {
 	DeviceInfo* device_info;
 	struct DeviceServerData* device_server_data;
-	std::map<const char*, HANDLE> services;
+	std::map<const char*, ServiceInfo> services;
 	int sessions;
 	std::map<std::string, ApplicationCache> apps_cache;
 
@@ -149,18 +161,18 @@ typedef CFDictionaryRef(__cdecl *cfdictionary_create)(void *, void*, void*, int,
 typedef void*(__cdecl *cfurl_create_with_string)(void *, CFStringRef, void*);
 
 typedef unsigned(__cdecl *afc_connection_open)(HANDLE, const char*, void*);
-typedef unsigned(__cdecl *afc_connection_close)(afc_connection*);
-typedef unsigned(__cdecl *afc_file_info_open)(afc_connection*, const char*, afc_dictionary**);
-typedef unsigned(__cdecl *afc_directory_read)(afc_connection*, afc_directory*, char**);
-typedef unsigned(__cdecl *afc_directory_open)(afc_connection*, const char*, afc_directory**);
-typedef unsigned(__cdecl *afc_directory_close)(afc_connection*, afc_directory*);
-typedef unsigned(__cdecl *afc_directory_create)(afc_connection*, const char *);
-typedef unsigned(__cdecl *afc_remove_path)(afc_connection*, const char *);
-typedef unsigned(__cdecl *afc_fileref_open)(afc_connection*, const char *, unsigned long long, afc_file_ref*);
-typedef unsigned(__cdecl *afc_fileref_read)(afc_connection*, afc_file_ref, void *, size_t*);
-typedef unsigned(__cdecl *afc_get_device_info_key)(afc_connection*, const char *, char**);
-typedef unsigned(__cdecl *afc_fileref_write)(afc_connection*, afc_file_ref, const void*, size_t);
-typedef unsigned(__cdecl *afc_fileref_close)(afc_connection*, afc_file_ref);
+typedef unsigned(__cdecl *afc_connection_close)(AFCConnectionRef);
+typedef unsigned(__cdecl *afc_file_info_open)(AFCConnectionRef, const char*, afc_dictionary**);
+typedef unsigned(__cdecl *afc_directory_read)(AFCConnectionRef, afc_directory*, char**);
+typedef unsigned(__cdecl *afc_directory_open)(AFCConnectionRef, const char*, afc_directory**);
+typedef unsigned(__cdecl *afc_directory_close)(AFCConnectionRef, afc_directory*);
+typedef unsigned(__cdecl *afc_directory_create)(AFCConnectionRef, const char *);
+typedef unsigned(__cdecl *afc_remove_path)(AFCConnectionRef, const char *);
+typedef unsigned(__cdecl *afc_fileref_open)(AFCConnectionRef, const char *, unsigned long long, afc_file_ref*);
+typedef unsigned(__cdecl *afc_fileref_read)(AFCConnectionRef, afc_file_ref, void *, size_t*);
+typedef unsigned(__cdecl *afc_get_device_info_key)(AFCConnectionRef, const char *, char**);
+typedef unsigned(__cdecl *afc_fileref_write)(AFCConnectionRef, afc_file_ref, const void*, size_t);
+typedef unsigned(__cdecl *afc_fileref_close)(AFCConnectionRef, afc_file_ref);
 typedef unsigned(__cdecl *device_start_house_arrest)(const DeviceInfo*, CFStringRef, void*, HANDLE*, unsigned int*);
 typedef unsigned(__cdecl *device_lookup_applications)(const DeviceInfo*, CFDictionaryRef, CFDictionaryRef*);
 typedef int(__cdecl *usb_mux_connect_by_port)(int, int, long long*);
@@ -228,14 +240,21 @@ typedef int(__cdecl *usb_mux_connect_by_port)(int, int, long long*);
 
 #include <CoreFoundation/CoreFoundation.h>
 
+// TODO: handle Windows
+
 extern "C"
 {
+    CFSocketNativeHandle  AMDServiceConnectionGetSocket(ServiceConnRef con);
+    long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
+    long AMDServiceConnectionSendMessage(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
+    unsigned AMDeviceSecureStartService(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
 	unsigned AMDeviceNotificationSubscribe(void(*f)(const DevicePointer*), long, long, long, HANDLE*);
 	CFStringRef AMDeviceCopyDeviceIdentifier(const DeviceInfo*);
 	CFStringRef AMDeviceCopyValue(const DeviceInfo*, CFStringRef, CFStringRef);
 	unsigned AMDeviceMountImage(const DeviceInfo*, CFStringRef, CFDictionaryRef, void(*f)(void*, int), void*);
 	unsigned AMDeviceStartService(const DeviceInfo*, CFStringRef, HANDLE*, void*);
 	unsigned AMDeviceLookupApplications(const DeviceInfo*, CFDictionaryRef, CFDictionaryRef*);
+    unsigned AMDeviceCreateHouseArrestService(const DeviceInfo*, CFStringRef identifier, void * unknown, AFCConnectionRef * handle);
 	int AMDeviceGetConnectionID(const DeviceInfo*);
 	int AMDeviceGetInterfaceType(const DeviceInfo*);
 	unsigned AMDeviceUninstallApplication(HANDLE, CFStringRef, void*, void(*f)(), void*);
@@ -251,17 +270,17 @@ extern "C"
 	unsigned AMDeviceSecureInstallApplication(int, const DeviceInfo*, CFURLRef, CFDictionaryRef, void(*f)(), int);
 	unsigned AMDeviceStartHouseArrestService(const DeviceInfo*, CFStringRef, void*, HANDLE*, unsigned int*);
 	unsigned AFCConnectionOpen(HANDLE, const char*, void*);
-	unsigned AFCConnectionClose(afc_connection*);
-	unsigned AFCRemovePath(afc_connection*, const char*);
-	unsigned AFCFileInfoOpen(afc_connection*, const char*, afc_dictionary**);
-	unsigned AFCDirectoryRead(afc_connection*, afc_directory*, char**);
-	unsigned AFCDirectoryOpen(afc_connection*, const char*, afc_directory**);
-	unsigned AFCDirectoryClose(afc_connection*, afc_directory*);
-	unsigned AFCDirectoryCreate(afc_connection*, const char*);
-	unsigned AFCFileRefOpen(afc_connection*, const char*, unsigned long long, afc_file_ref*);
-	unsigned AFCFileRefRead(afc_connection*, afc_file_ref, void*, size_t*);
-	unsigned AFCFileRefWrite(afc_connection*, afc_file_ref, const void*, size_t);
-	unsigned AFCFileRefClose(afc_connection*, afc_file_ref);
+	unsigned AFCConnectionClose(AFCConnectionRef);
+	unsigned AFCRemovePath(AFCConnectionRef, const char*);
+	unsigned AFCFileInfoOpen(AFCConnectionRef, const char*, afc_dictionary**);
+	unsigned AFCDirectoryRead(AFCConnectionRef, afc_directory*, char**);
+	unsigned AFCDirectoryOpen(AFCConnectionRef, const char*, afc_directory**);
+	unsigned AFCDirectoryClose(AFCConnectionRef, afc_directory*);
+	unsigned AFCDirectoryCreate(AFCConnectionRef, const char*);
+	unsigned AFCFileRefOpen(AFCConnectionRef, const char*, unsigned long long, afc_file_ref*);
+	unsigned AFCFileRefRead(AFCConnectionRef, afc_file_ref, void*, size_t*);
+	unsigned AFCFileRefWrite(AFCConnectionRef, afc_file_ref, const void*, size_t);
+	unsigned AFCFileRefClose(AFCConnectionRef, afc_file_ref);
 	unsigned USBMuxConnectByPort(int, int, long long*);
 }
 
