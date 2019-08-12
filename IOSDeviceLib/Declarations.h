@@ -237,6 +237,7 @@ extern "C"
     typedef service_conn_t * ServiceConnRef;
 typedef struct DeviceInfo * AMDeviceRef;
 CFSocketNativeHandle  AMDServiceConnectionGetSocket(ServiceConnRef con);
+long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
 unsigned AMDeviceSecureStartService(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
 	unsigned AMDeviceNotificationSubscribe(void(*f)(const DevicePointer*), long, long, long, HANDLE*);
 	CFStringRef AMDeviceCopyDeviceIdentifier(const DeviceInfo*);

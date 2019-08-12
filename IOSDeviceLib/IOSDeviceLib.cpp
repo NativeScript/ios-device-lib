@@ -421,7 +421,7 @@ HANDLE start_secure_service(std::string device_identifier, const char* service_n
 
 HANDLE start_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
 {
-    return start_secure_service(device_identifier, service_name, method_id, should_log_error, skip_cache);
+    //return start_secure_service(device_identifier, service_name, method_id, should_log_error, skip_cache);
     start_service_mutex.lock();
     if (!devices.count(device_identifier))
     {
@@ -563,7 +563,7 @@ void uninstall_application(std::string application_identifier, std::string devic
 		return;
 	}
 
-	HANDLE socket = start_service(device_identifier, kInstallationProxy, method_id);
+	HANDLE socket = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false);
 	if (!socket)
 	{
 		return;
@@ -991,7 +991,7 @@ void read_file(std::string device_identifier, const char *application_identifier
 
 void get_application_infos(std::string device_identifier, std::string method_id)
 {
-	HANDLE socket = start_service(device_identifier, kInstallationProxy, method_id);
+	HANDLE socket = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false);
 	if (!socket)
 	{
 		return;
@@ -1138,7 +1138,25 @@ void lookup_apps(std::string device_identifier, std::string method_id)
 
 void device_log(std::string device_identifier, std::string method_id)
 {
-	HANDLE socket = start_service(device_identifier, kSyslog, method_id);
+	// HANDLE socket = start_secure_service(device_identifier, kSyslog, method_id, true, false);
+    
+    // TEMP START SECURE SERVICE CONTENT START
+    
+    start_service_mutex.lock();
+    start_session(device_identifier);
+    CFStringRef cf_service_name = create_CFString(kSyslog);
+    
+     ServiceConnRef con;
+     unsigned result = AMDeviceSecureStartService(devices[device_identifier].device_info, cf_service_name, NULL, &con);
+     service_conn_t socket = (void*)AMDServiceConnectionGetSocket(con);
+      
+     stop_session(device_identifier);
+     CFRelease(cf_service_name);
+
+     start_service_mutex.unlock();
+    
+    // TEMP START SECURE SERVICE CONTENT END
+    
 	if (!socket)
 	{
 		return;
@@ -1146,7 +1164,9 @@ void device_log(std::string device_identifier, std::string method_id)
 
 	char *buffer = new char[kDeviceLogBytesToRead];
 	int bytes_read;
-	while ((bytes_read = recv((SOCKET)socket, buffer, kDeviceLogBytesToRead, 0)) > 0)
+    
+    // inspired by: https://github.com/DerekSelander/mobdevim/blob/a457f119f1576b85e9f8f89be8713f018ee97f59/mobdevim/console.temp_caseinsensitive_rename.m#L27
+	while ((bytes_read = AMDServiceConnectionReceive(con, buffer, kDeviceLogBytesToRead)) > 0)
 	{
 		json message;
 		message[kDeviceId] = device_identifier;
@@ -1160,7 +1180,7 @@ void device_log(std::string device_identifier, std::string method_id)
 
 void post_notification(std::string device_identifier, PostNotificationInfo post_notification_info, std::string method_id)
 {
-	HANDLE handle = start_service(device_identifier, kNotificationProxy, method_id, true, true);
+	HANDLE handle = start_secure_service(device_identifier, kNotificationProxy, method_id, true, true);
 	if (!handle)
 	{
 		return;

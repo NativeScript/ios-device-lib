@@ -41,6 +41,7 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 	}
 
 	_distributeMessage(message) {
+		// console.log("DEVICE MESSAGE: ", message);
 		if (message.event) {
 			switch (message.event) {
 				case Constants.DeviceEventEnum.kDeviceFound:
