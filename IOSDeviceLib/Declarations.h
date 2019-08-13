@@ -231,6 +231,8 @@ typedef int(__cdecl *usb_mux_connect_by_port)(int, int, long long*);
 
 #include <CoreFoundation/CoreFoundation.h>
 
+// TODO: handle Windows
+
 extern "C"
 {
     typedef HANDLE service_conn_t;
@@ -238,6 +240,7 @@ extern "C"
 typedef struct DeviceInfo * AMDeviceRef;
 CFSocketNativeHandle  AMDServiceConnectionGetSocket(ServiceConnRef con);
 long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
+long AMDServiceConnectionSendMessage(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
 unsigned AMDeviceSecureStartService(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
 	unsigned AMDeviceNotificationSubscribe(void(*f)(const DevicePointer*), long, long, long, HANDLE*);
 	CFStringRef AMDeviceCopyDeviceIdentifier(const DeviceInfo*);

@@ -80,6 +80,9 @@ afc_fileref_close __AFCFileRefClose;
 
 using json = nlohmann::json;
 
+// temp hack
+ServiceConnRef currentCon;
+
 int __result;
 std::map<std::string, DeviceData> devices;
 
@@ -396,6 +399,7 @@ HANDLE start_secure_service(std::string device_identifier, const char* service_n
     ServiceConnRef con;
     unsigned result = AMDeviceSecureStartService(devices[device_identifier].device_info, cf_service_name, NULL, &con);
     service_conn_t socket = (void*)AMDServiceConnectionGetSocket(con);
+    // currentCon = con;
 
      
     stop_session(device_identifier);
@@ -1161,13 +1165,16 @@ void device_log(std::string device_identifier, std::string method_id)
 	{
 		return;
 	}
+    
+    
 
 	char *buffer = new char[kDeviceLogBytesToRead];
 	int bytes_read;
     
     // inspired by: https://github.com/DerekSelander/mobdevim/blob/a457f119f1576b85e9f8f89be8713f018ee97f59/mobdevim/console.temp_caseinsensitive_rename.m#L27
 	while ((bytes_read = AMDServiceConnectionReceive(con, buffer, kDeviceLogBytesToRead)) > 0)
-	{
+    //while ((bytes_read = recv((SOCKET)socket, buffer, kDeviceLogBytesToRead, 0)) > 0)
+    {
 		json message;
 		message[kDeviceId] = device_identifier;
 		message[kMessage] = std::string(buffer, bytes_read);
@@ -1180,7 +1187,25 @@ void device_log(std::string device_identifier, std::string method_id)
 
 void post_notification(std::string device_identifier, PostNotificationInfo post_notification_info, std::string method_id)
 {
-	HANDLE handle = start_secure_service(device_identifier, kNotificationProxy, method_id, true, true);
+    // TEMP START SECURE SERVICE CONTENT START
+    
+    start_service_mutex.lock();
+    start_session(device_identifier);
+    CFStringRef cf_service_name = create_CFString(kNotificationProxy);
+    
+     ServiceConnRef con;
+     unsigned result = AMDeviceSecureStartService(devices[device_identifier].device_info, cf_service_name, NULL, &con);
+     HANDLE handle = (void*)AMDServiceConnectionGetSocket(con);
+
+      currentCon = con;
+     stop_session(device_identifier);
+     CFRelease(cf_service_name);
+
+     start_service_mutex.unlock();
+    
+    // TEMP START SECURE SERVICE CONTENT END
+    
+	// HANDLE handle = start_secure_service(device_identifier, kNotificationProxy, method_id, true, true);
 	if (!handle)
 	{
 		return;
@@ -1207,13 +1232,28 @@ void post_notification(std::string device_identifier, PostNotificationInfo post_
 						"</plist>";
 
 	SOCKET socket = (SOCKET)handle;
-	send_message(xml_command.str().c_str(), socket);
+    
+    
+    CFStringRef cf_command_key = create_CFString("Command");
+    CFStringRef cf_command_value = create_CFString(post_notification_info.command_type.c_str());
+    CFStringRef cf_name_key = create_CFString("Name");
+    CFStringRef cf_name_value = create_CFString(post_notification_info.notification_name.c_str());
+    CFStringRef cf_client_options_key = create_CFString("ClientOptions");
+    CFStringRef cf_client_options_value = create_CFString("");
+    const void *keys_arr[] = { cf_command_key, cf_name_key, cf_client_options_key };
+    const void *values_arr[] = { cf_command_value, cf_name_value, cf_client_options_value };
+    CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 3, NULL, NULL);
+    
+    
+    // TODO: use proper con
+	send_con_message(con, dict_command);
 	print(json({ { kResponse, socket }, { kId, method_id }, { kDeviceId, device_identifier } }));
 }
 
 void await_notification_response(std::string device_identifier, AwaitNotificationResponseInfo await_notification_response_info, std::string method_id)
 {
-	std::map<std::string, boost::any> response = receive_message(await_notification_response_info.socket, await_notification_response_info.timeout);
+    // TODO: get proper connection
+	std::map<std::string, boost::any> response = receive_con_message(currentCon);
 	if (response.size())
 	{
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response.count(kErrorKey), boost::any_cast<std::string>(response[kErrorKey]).c_str(), device_identifier, method_id);
