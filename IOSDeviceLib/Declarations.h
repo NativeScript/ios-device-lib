@@ -99,10 +99,18 @@ struct ApplicationCache {
 	bool has_initialized_gdb;
 };
 
+typedef HANDLE service_conn_t;
+typedef service_conn_t * ServiceConnRef;
+typedef struct DeviceInfo * AMDeviceRef;
+struct ServiceInfo {
+    HANDLE socket;
+    service_conn_t* connection;
+};
+
 struct DeviceData {
 	DeviceInfo* device_info;
 	struct DeviceServerData* device_server_data;
-	std::map<const char*, HANDLE> services;
+	std::map<const char*, ServiceInfo> services;
 	int sessions;
 	std::map<std::string, ApplicationCache> apps_cache;
 
@@ -235,13 +243,10 @@ typedef int(__cdecl *usb_mux_connect_by_port)(int, int, long long*);
 
 extern "C"
 {
-    typedef HANDLE service_conn_t;
-    typedef service_conn_t * ServiceConnRef;
-typedef struct DeviceInfo * AMDeviceRef;
-CFSocketNativeHandle  AMDServiceConnectionGetSocket(ServiceConnRef con);
-long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
-long AMDServiceConnectionSendMessage(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
-unsigned AMDeviceSecureStartService(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
+    CFSocketNativeHandle  AMDServiceConnectionGetSocket(ServiceConnRef con);
+    long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
+    long AMDServiceConnectionSendMessage(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
+    unsigned AMDeviceSecureStartService(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
 	unsigned AMDeviceNotificationSubscribe(void(*f)(const DevicePointer*), long, long, long, HANDLE*);
 	CFStringRef AMDeviceCopyDeviceIdentifier(const DeviceInfo*);
 	CFStringRef AMDeviceCopyValue(const DeviceInfo*, CFStringRef, CFStringRef);

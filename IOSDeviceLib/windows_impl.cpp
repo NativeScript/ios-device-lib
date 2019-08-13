@@ -22,7 +22,7 @@ bool mount_image(std::string& device_identifier, std::string& image_path, std::s
 	std::string image_signature_path = image_path + ".signature";
 	PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(!exists(image_signature_path), "Could not find developer disk image signature", device_identifier, method_id, false);
 
-	HANDLE mountFd = start_service(device_identifier, kMobileImageMounter, method_id);
+	HANDLE mountFd = start_secure_service(device_identifier, kMobileImageMounter, method_id);
 	if (!mountFd)
 	{
 		return false;
