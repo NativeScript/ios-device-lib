@@ -7,8 +7,6 @@
 #include "PlistCpp/Plist.hpp"
 #include "PlistCpp/PlistDate.hpp"
 
-
-// TODO: use timeout?
 std::mutex receive_con_message_mutex;
 std::map<std::string, boost::any> receive_con_message(ServiceConnRef con)
 {
@@ -33,7 +31,6 @@ std::map<std::string, boost::any> receive_con_message(ServiceConnRef con)
     return dict;
 }
 
-// TODO: send_con_message
 long send_con_message(ServiceConnRef serviceConnection, CFDictionaryRef message)
 {
     return AMDServiceConnectionSendMessage(serviceConnection, message, kCFPropertyListXMLFormat_v1_0);

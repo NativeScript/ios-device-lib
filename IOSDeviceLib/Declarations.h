@@ -105,6 +105,7 @@ typedef struct DeviceInfo * AMDeviceRef;
 struct ServiceInfo {
     HANDLE socket;
     service_conn_t* connection;
+    int connection_id;
 };
 
 struct DeviceData {

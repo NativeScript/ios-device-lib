@@ -81,6 +81,7 @@ afc_fileref_close __AFCFileRefClose;
 using json = nlohmann::json;
 
 int __result;
+int nextServiceConnectionId = 13;
 std::map<std::string, DeviceData> devices;
 std::map<int, ServiceConnRef> serviceConnections;
 
@@ -368,7 +369,6 @@ std::mutex start_service_mutex;
 
 ServiceInfo start_secure_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
 {
-    // TODO: check default values
     start_service_mutex.lock();
     ServiceInfo serviceInfoResult;
     if (!devices.count(device_identifier))
@@ -408,6 +408,9 @@ ServiceInfo start_secure_service(std::string device_identifier, const char* serv
     
     serviceInfoResult.socket = socket;
     serviceInfoResult.connection = connection;
+    serviceInfoResult.connection_id = nextServiceConnectionId;
+    serviceConnections[nextServiceConnectionId] = connection;
+    nextServiceConnectionId++;
 
     if (!skip_cache) {
         devices[device_identifier].services[service_name] = serviceInfoResult;
@@ -916,41 +919,52 @@ void read_file(std::string device_identifier, const char *application_identifier
 	print(json({{ kResponse, result },{ kId, method_id },{ kDeviceId, device_identifier } }));
 }
 
-// TODO: test
 void get_application_infos(std::string device_identifier, std::string method_id)
 {
-	HANDLE socket = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false).socket;
-	if (!socket)
+	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false);
+	if (!serviceInfo.socket)
 	{
 		return;
 	}
+    
+    CFStringRef cf_bundle_id_key = create_CFString("CFBundleIdentifier");
+    CFStringRef cf_config_key = create_CFString("configuration");
+    const void* cf_return_attributes[] = { cf_bundle_id_key, cf_config_key };
+    const CFArrayRef cf_return_attributes_array = CFArrayCreate(NULL, cf_return_attributes, 2, NULL);
+    
+    CFStringRef cf_app_type_key = create_CFString("ApplicationType");
+    CFStringRef cf_return_attrs_key = create_CFString("ReturnAttributes");
+    const void *client_opts_keys_arr[] = { cf_app_type_key, cf_return_attrs_key };
+    
+    
+    CFStringRef cf_user_value = create_CFString("User");
+    const void *client_opts_values_arr[] = { cf_user_value, cf_return_attributes_array };
+    CFDictionaryRef clinet_opts_dict = CFDictionaryCreate(NULL, client_opts_keys_arr, client_opts_values_arr, 2, NULL, NULL);
+    
+    CFStringRef cf_command_key = create_CFString("Command");
+    CFStringRef cf_client_options_key = create_CFString("ClientOptions");
+    const void *keys_arr[] = { cf_command_key, cf_client_options_key };
+    CFStringRef cf_browse_value = create_CFString("Browse");
+    const void *values_arr[] = { cf_browse_value, clinet_opts_dict };
+    CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 2, NULL, NULL);
 
-	const char *xml_command = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-							"<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">"
-							"<plist version=\"1.0\">"
-								"<dict>"
-									"<key>Command</key>"
-									"<string>Browse</string>"
-									"<key>ClientOptions</key>"
-									"<dict>"
-										"<key>ApplicationType</key>"
-										"<string>User</string>"
-										"<key>ReturnAttributes</key>"
-										"<array>"
-											"<string>CFBundleIdentifier</string>"
-											"<string>IceniumLiveSyncEnabled</string>"
-											"<string>configuration</string>"
-										"</array>"
-									"</dict>"
-								"</dict>"
-							"</plist>";
-
-	int bytes_sent = send_message(xml_command, (SOCKET)socket);
+	send_con_message(serviceInfo.connection, dict_command);
+    CFRelease(cf_bundle_id_key);
+    CFRelease(cf_config_key);
+    CFRelease(cf_return_attributes_array);
+    CFRelease(cf_app_type_key);
+    CFRelease(cf_return_attrs_key);
+    CFRelease(cf_user_value);
+    CFRelease(clinet_opts_dict);
+    CFRelease(cf_command_key);
+    CFRelease(cf_client_options_key);
+    CFRelease(cf_browse_value);
+    CFRelease(dict_command);
 
 	std::vector<json> livesync_app_infos;
 	while (true)
 	{
-		std::map<std::string, boost::any> dict = receive_message((SOCKET)socket);
+		std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection);
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(dict.count(kErrorKey), boost::any_cast<std::string>(dict[kErrorKey]).c_str(), device_identifier, method_id);
 		if (dict.empty() || (dict.count(kStatusKey) && has_complete_status(dict)))
 		{
@@ -968,7 +982,6 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 			{
 				std::map<std::string, boost::any> app_info = boost::any_cast<std::map<std::string, boost::any>>(list);
 				json current_info = {
-					{ "IceniumLiveSyncEnabled", app_info.count("IceniumLiveSyncEnabled") && boost::any_cast<bool>(app_info["IceniumLiveSyncEnabled"]) },
 					{ "CFBundleIdentifier", app_info.count("CFBundleIdentifier") ? boost::any_cast<std::string>(app_info["CFBundleIdentifier"]) : "" },
 					{ "configuration", app_info.count("configuration") ? boost::any_cast<std::string>(app_info["configuration"]) : ""},
 				};
@@ -1066,38 +1079,17 @@ void lookup_apps(std::string device_identifier, std::string method_id)
 
 void device_log(std::string device_identifier, std::string method_id)
 {
-	// HANDLE socket = start_secure_service(device_identifier, kSyslog, method_id, true, false);
-    
-    // TEMP START SECURE SERVICE CONTENT START
-    
-    start_service_mutex.lock();
-    start_session(device_identifier);
-    CFStringRef cf_service_name = create_CFString(kSyslog);
-    
-     ServiceConnRef con;
-     unsigned result = AMDeviceSecureStartService(devices[device_identifier].device_info, cf_service_name, NULL, &con);
-     service_conn_t socket = (void*)AMDServiceConnectionGetSocket(con);
-      
-     stop_session(device_identifier);
-     CFRelease(cf_service_name);
-
-     start_service_mutex.unlock();
-    
-    // TEMP START SECURE SERVICE CONTENT END
-    
-	if (!socket)
+	ServiceInfo serviceInfo = start_secure_service(device_identifier, kSyslog, method_id, true, false);
+	if (!serviceInfo.socket)
 	{
 		return;
 	}
-    
-    
 
 	char *buffer = new char[kDeviceLogBytesToRead];
 	int bytes_read;
     
     // inspired by: https://github.com/DerekSelander/mobdevim/blob/a457f119f1576b85e9f8f89be8713f018ee97f59/mobdevim/console.temp_caseinsensitive_rename.m#L27
-	while ((bytes_read = AMDServiceConnectionReceive(con, buffer, kDeviceLogBytesToRead)) > 0)
-    //while ((bytes_read = recv((SOCKET)socket, buffer, kDeviceLogBytesToRead, 0)) > 0)
+	while ((bytes_read = AMDServiceConnectionReceive(serviceInfo.connection, buffer, kDeviceLogBytesToRead)) > 0)
     {
 		json message;
 		message[kDeviceId] = device_identifier;
@@ -1111,7 +1103,7 @@ void device_log(std::string device_identifier, std::string method_id)
 
 void post_notification(std::string device_identifier, PostNotificationInfo post_notification_info, std::string method_id)
 {
-    ServiceInfo info = start_secure_service(device_identifier, kNotificationProxy, method_id);
+    ServiceInfo info = start_secure_service(device_identifier, kNotificationProxy, method_id, true, true);
 	if (!info.socket)
 	{
 		return;
@@ -1127,15 +1119,26 @@ void post_notification(std::string device_identifier, PostNotificationInfo post_
     const void *values_arr[] = { cf_command_value, cf_name_value, cf_client_options_value };
     CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 3, NULL, NULL);
     
-	send_con_message(info.connection, dict_command);
-	print(json({ { kResponse, info.socket }, { kId, method_id }, { kDeviceId, device_identifier } }));
+	long result = send_con_message(info.connection, dict_command);
+    CFRelease(cf_command_key);
+    CFRelease(cf_command_value);
+    CFRelease(cf_name_key);
+    CFRelease(cf_name_value);
+    CFRelease(cf_client_options_key);
+    CFRelease(cf_client_options_value);
+    CFRelease(dict_command);
+    
+	print(json({ { kResponse, info.connection_id }, { kId, method_id }, { kDeviceId, device_identifier } }));
 }
 
 void await_notification_response(std::string device_identifier, AwaitNotificationResponseInfo await_notification_response_info, std::string method_id)
 {
-    // TODO: check multiple notifications as we are using the cache
+    ServiceConnRef connection = serviceConnections[(int)await_notification_response_info.socket];
+    std::string invalid_connection_error_message = "Invalid connectionId: " + std::to_string(await_notification_response_info.socket);
+    PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(connection == nullptr, invalid_connection_error_message.c_str(), device_identifier, method_id);
+    
     ServiceInfo currentNotificationProxy = devices[device_identifier].services[kNotificationProxy];
-	std::map<std::string, boost::any> response = receive_con_message(currentNotificationProxy.connection);
+	std::map<std::string, boost::any> response = receive_con_message(connection);
 	if (response.size())
 	{
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response.count(kErrorKey), boost::any_cast<std::string>(response[kErrorKey]).c_str(), device_identifier, method_id);
