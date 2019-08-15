@@ -4,6 +4,7 @@
 #include <io.h>
 #include <fcntl.h>
 #include <ws2tcpip.h>
+typedef void* CFDictionaryRef;
 
 #pragma comment(lib, "Ws2_32.lib")
 #else
@@ -22,7 +23,6 @@ typedef unsigned long long SOCKET;
 #include <string>
 #include <functional>
 #include "PlistCpp/include/boost/any.hpp"
-
 struct LengthEncodedMessage {
 	char *message;
 	size_t length;

@@ -25,6 +25,7 @@
 #ifdef _WIN32
 #pragma region Dll_Variable_Definitions
 
+CFPropertyListFormat kCFPropertyListXMLFormat_v1_0 = (CFPropertyListFormat)100;
 device_notification_subscribe_ptr __AMDeviceNotificationSubscribe;
 HINSTANCE mobile_device_dll;
 HINSTANCE core_foundation_dll;
@@ -34,6 +35,11 @@ device_copy_value __AMDeviceCopyValue;
 device_start_service __AMDeviceStartService;
 device_uninstall_application __AMDeviceUninstallApplication;
 device_secure_operation_with_bundle_id __AMDeviceSecureUninstallApplication;
+device_secure_start_service_ptr __AMDeviceSecureStartService;
+service_connection_get_socket_ptr __AMDServiceConnectionGetSocket;
+service_connection_receive_ptr __AMDServiceConnectionReceive;
+service_connection_send_message_ptr __AMDServiceConnectionSendMessage;
+device_create_house_arrest_service_ptr __AMDeviceCreateHouseArrestService;
 device_connection_operation __AMDeviceStartSession;
 device_connection_operation __AMDeviceStopSession;
 device_connection_operation __AMDeviceConnect;
@@ -57,6 +63,7 @@ cf_get_concrete_type_id __CFDictionaryGetTypeID;
 cfdictionary_get_count __CFDictionaryGetCount;
 cfdictionary_get_keys_and_values __CFDictionaryGetKeysAndValues;
 cfstring_create_with_cstring __CFStringCreateWithCString;
+cfarray_create __CFArrayCreate;
 cfurl_create_with_string __CFURLCreateWithString;
 cfdictionary_create __CFDictionaryCreate;
 cfrelease __CFRelease;
@@ -365,7 +372,7 @@ std::mutex start_service_mutex;
 ServiceInfo start_secure_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
 {
     start_service_mutex.lock();
-    ServiceInfo serviceInfoResult;
+	ServiceInfo serviceInfoResult = {};
     if (!devices.count(device_identifier))
     {
         if (should_log_error)
@@ -454,10 +461,13 @@ AFCConnectionRef start_house_arrest(std::string device_identifier, const char* a
 HANDLE start_debug_server(std::string device_identifier, std::string ddi, std::string method_id)
 {
 	ServiceInfo info = start_secure_service(device_identifier, kDebugServer, method_id, false, false);
+	// mount_image is not available on Windows
+#ifndef _WIN32
 	if (!info.socket && mount_image(device_identifier, ddi, method_id))
 	{
 		info = start_secure_service(device_identifier, kDebugServer, method_id, true, false);
 	}
+#endif
 
 	return info.socket;
 }
