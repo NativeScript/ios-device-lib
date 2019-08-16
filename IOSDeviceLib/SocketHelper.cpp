@@ -3,9 +3,38 @@
 
 #include "SocketHelper.h"
 #include "Constants.h"
-
+#include "Declarations.h"
 #include "PlistCpp/Plist.hpp"
 #include "PlistCpp/PlistDate.hpp"
+
+std::mutex receive_con_message_mutex;
+std::map<std::string, boost::any> receive_con_message(ServiceConnRef con)
+{
+    receive_con_message_mutex.lock();
+    std::map<std::string, boost::any> dict;
+    char *buffer = new char[4];
+    int bytes_read = AMDServiceConnectionReceive(con, buffer, 4);
+    if (bytes_read > 0)
+    {
+        unsigned long res = ntohl(*((unsigned long*)buffer));
+        delete[] buffer;
+        buffer = new char[res];
+        bytes_read = AMDServiceConnectionReceive(con, buffer, res);
+        if (bytes_read > 0)
+        {
+            Plist::readPlist(buffer, res, dict);
+        }
+    }
+
+    delete[] buffer;
+    receive_con_message_mutex.unlock();
+    return dict;
+}
+
+long send_con_message(ServiceConnRef serviceConnection, CFDictionaryRef message)
+{
+    return AMDServiceConnectionSendMessage(serviceConnection, message, kCFPropertyListXMLFormat_v1_0);
+}
 
 int send_message(const char* message, SOCKET socket, long long length)
 {
