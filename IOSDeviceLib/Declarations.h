@@ -63,7 +63,6 @@ struct LiveSyncApplicationInfo {
 
 typedef unsigned long long afc_file_ref;
 
-
 struct afc_connection {
 	unsigned int handle;            /* 0 */
 	unsigned int unknown0;          /* 4 */
@@ -103,9 +102,9 @@ typedef HANDLE service_conn_t;
 typedef service_conn_t * ServiceConnRef;
 typedef struct DeviceInfo * AMDeviceRef;
 struct ServiceInfo {
-    HANDLE socket;
-    ServiceConnRef connection;
-    int connection_id;
+	HANDLE socket;
+	ServiceConnRef connection;
+	int connection_id;
 };
 
 struct DeviceData {
@@ -262,21 +261,19 @@ extern HINSTANCE mobile_device_dll;
 
 #include <CoreFoundation/CoreFoundation.h>
 
-// TODO: handle Windows
-
 extern "C"
 {
-    CFSocketNativeHandle  AMDServiceConnectionGetSocket(ServiceConnRef con);
-    long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
-    long AMDServiceConnectionSendMessage(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
-    unsigned AMDeviceSecureStartService(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
+	CFSocketNativeHandle  AMDServiceConnectionGetSocket(ServiceConnRef con);
+	long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
+	long AMDServiceConnectionSendMessage(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
+	unsigned AMDeviceSecureStartService(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
 	unsigned AMDeviceNotificationSubscribe(void(*f)(const DevicePointer*), long, long, long, HANDLE*);
 	CFStringRef AMDeviceCopyDeviceIdentifier(const DeviceInfo*);
 	CFStringRef AMDeviceCopyValue(const DeviceInfo*, CFStringRef, CFStringRef);
 	unsigned AMDeviceMountImage(const DeviceInfo*, CFStringRef, CFDictionaryRef, void(*f)(void*, int), void*);
 	unsigned AMDeviceStartService(const DeviceInfo*, CFStringRef, HANDLE*, void*);
 	unsigned AMDeviceLookupApplications(const DeviceInfo*, CFDictionaryRef, CFDictionaryRef*);
-    unsigned AMDeviceCreateHouseArrestService(const DeviceInfo*, CFStringRef identifier, void * unknown, AFCConnectionRef * handle);
+	unsigned AMDeviceCreateHouseArrestService(const DeviceInfo*, CFStringRef identifier, void * unknown, AFCConnectionRef * handle);
 	int AMDeviceGetConnectionID(const DeviceInfo*);
 	int AMDeviceGetInterfaceType(const DeviceInfo*);
 	unsigned AMDeviceUninstallApplication(HANDLE, CFStringRef, void*, void(*f)(), void*);

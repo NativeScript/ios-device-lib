@@ -34,7 +34,7 @@ struct LengthEncodedMessage {
 };
 
 struct Utf16Message {
-    std::string message;
+	std::string message;
 };
 
 LengthEncodedMessage get_message_with_encoded_length(const char* message, long long length = -1);

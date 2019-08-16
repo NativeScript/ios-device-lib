@@ -134,7 +134,7 @@ int start_session(std::string& device_identifier)
 	{
 		const DeviceInfo* device_info = devices[device_identifier].device_info;
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceConnect(device_info), start_session_mutex);
-        assert(AMDeviceIsPaired(device_info));
+		assert(AMDeviceIsPaired(device_info));
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceValidatePairing(device_info), start_session_mutex);
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceStartSession(device_info), start_session_mutex);
 	}
@@ -371,55 +371,55 @@ std::mutex start_service_mutex;
 
 ServiceInfo start_secure_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
 {
-    start_service_mutex.lock();
+	start_service_mutex.lock();
 	ServiceInfo serviceInfoResult = {};
-    if (!devices.count(device_identifier))
-    {
-        if (should_log_error)
-            print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
+	if (!devices.count(device_identifier))
+	{
+		if (should_log_error)
+			print_error("Device not found", device_identifier, method_id, kAMDNotFoundError);
 
-        start_service_mutex.unlock();
-        return serviceInfoResult;
-    }
+		start_service_mutex.unlock();
+		return serviceInfoResult;
+	}
 
-    if (!skip_cache && devices[device_identifier].services.count(service_name))
-    {
-        start_service_mutex.unlock();
-        return devices[device_identifier].services[service_name];
-    }
+	if (!skip_cache && devices[device_identifier].services.count(service_name))
+	{
+		start_service_mutex.unlock();
+		return devices[device_identifier].services[service_name];
+	}
 
-    PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(start_session(device_identifier), "Could not start device session", device_identifier, method_id, serviceInfoResult);
-    CFStringRef cf_service_name = create_CFString(service_name);
-    
-    ServiceConnRef connection;
-    unsigned result = AMDeviceSecureStartService(devices[device_identifier].device_info, cf_service_name, NULL, &connection);
-    service_conn_t socket = (void*)AMDServiceConnectionGetSocket(connection);
-     
-    stop_session(device_identifier);
-    CFRelease(cf_service_name);
-    if (result)
-    {
-        std::string message("Could not start service ");
-        message += service_name;
-        if (should_log_error)
-            print_error(message.c_str(), device_identifier, method_id, result);
+	PRINT_ERROR_AND_RETURN_VALUE_IF_FAILED_RESULT(start_session(device_identifier), "Could not start device session", device_identifier, method_id, serviceInfoResult);
+	CFStringRef cf_service_name = create_CFString(service_name);
+	
+	ServiceConnRef connection;
+	unsigned result = AMDeviceSecureStartService(devices[device_identifier].device_info, cf_service_name, NULL, &connection);
+	service_conn_t socket = (void*)AMDServiceConnectionGetSocket(connection);
+	 
+	stop_session(device_identifier);
+	CFRelease(cf_service_name);
+	if (result)
+	{
+		std::string message("Could not start service ");
+		message += service_name;
+		if (should_log_error)
+			print_error(message.c_str(), device_identifier, method_id, result);
 
-        start_service_mutex.unlock();
-        return serviceInfoResult;
-    }
-    
-    serviceInfoResult.socket = socket;
-    serviceInfoResult.connection = connection;
-    serviceInfoResult.connection_id = nextServiceConnectionId;
-    serviceConnections[nextServiceConnectionId] = connection;
-    nextServiceConnectionId++;
+		start_service_mutex.unlock();
+		return serviceInfoResult;
+	}
+	
+	serviceInfoResult.socket = socket;
+	serviceInfoResult.connection = connection;
+	serviceInfoResult.connection_id = nextServiceConnectionId;
+	serviceConnections[nextServiceConnectionId] = connection;
+	nextServiceConnectionId++;
 
-    if (!skip_cache) {
-        devices[device_identifier].services[service_name] = serviceInfoResult;
-    }
+	if (!skip_cache) {
+		devices[device_identifier].services[service_name] = serviceInfoResult;
+	}
 
-    start_service_mutex.unlock();
-    return serviceInfoResult;
+	start_service_mutex.unlock();
+	return serviceInfoResult;
 }
 
 
@@ -431,19 +431,19 @@ AFCConnectionRef start_house_arrest(std::string device_identifier, const char* a
 		return NULL;
 	}
 
-    AFCConnectionRef persistedHouseArrestService = devices[device_identifier].apps_cache[application_identifier].afc_connection;
+	AFCConnectionRef persistedHouseArrestService = devices[device_identifier].apps_cache[application_identifier].afc_connection;
 	if (persistedHouseArrestService)
 	{
-        return persistedHouseArrestService;
+		return persistedHouseArrestService;
 	}
 
 	AFCConnectionRef conn = NULL;
 	start_session(device_identifier);
 	CFStringRef cf_application_identifier = create_CFString(application_identifier);
-    unsigned result = AMDeviceCreateHouseArrestService(devices[device_identifier].device_info, cf_application_identifier, 0, &conn);
-    
+	unsigned result = AMDeviceCreateHouseArrestService(devices[device_identifier].device_info, cf_application_identifier, 0, &conn);
+	
 	stop_session(device_identifier);
-    CFRelease(cf_application_identifier);
+	CFRelease(cf_application_identifier);
 
 	if (result)
 	{
@@ -454,7 +454,7 @@ AFCConnectionRef start_house_arrest(std::string device_identifier, const char* a
 	}
 
 	devices[device_identifier].apps_cache[application_identifier].afc_connection = conn;
-    
+	
 	return conn;
 }
 
@@ -479,7 +479,7 @@ AFCConnectionRef get_afc_connection(std::string& device_identifier, const char* 
 		return devices[device_identifier].apps_cache[application_identifier].afc_connection;
 	}
 
-    
+	
 	AFCConnectionRef con_ref = start_house_arrest(device_identifier, application_identifier, method_id);
 	if (!con_ref)
 	{
@@ -931,40 +931,40 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	{
 		return;
 	}
-    
-    CFStringRef cf_bundle_id_key = create_CFString("CFBundleIdentifier");
-    CFStringRef cf_config_key = create_CFString("configuration");
-    const void* cf_return_attributes[] = { cf_bundle_id_key, cf_config_key };
-    const CFArrayRef cf_return_attributes_array = CFArrayCreate(NULL, cf_return_attributes, 2, NULL);
-    
-    CFStringRef cf_app_type_key = create_CFString("ApplicationType");
-    CFStringRef cf_return_attrs_key = create_CFString("ReturnAttributes");
-    const void *client_opts_keys_arr[] = { cf_app_type_key, cf_return_attrs_key };
-    
-    
-    CFStringRef cf_user_value = create_CFString("User");
-    const void *client_opts_values_arr[] = { cf_user_value, cf_return_attributes_array };
-    CFDictionaryRef clinet_opts_dict = CFDictionaryCreate(NULL, client_opts_keys_arr, client_opts_values_arr, 2, NULL, NULL);
-    
-    CFStringRef cf_command_key = create_CFString("Command");
-    CFStringRef cf_client_options_key = create_CFString("ClientOptions");
-    const void *keys_arr[] = { cf_command_key, cf_client_options_key };
-    CFStringRef cf_browse_value = create_CFString("Browse");
-    const void *values_arr[] = { cf_browse_value, clinet_opts_dict };
-    CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 2, NULL, NULL);
+	
+	CFStringRef cf_bundle_id_key = create_CFString("CFBundleIdentifier");
+	CFStringRef cf_config_key = create_CFString("configuration");
+	const void* cf_return_attributes[] = { cf_bundle_id_key, cf_config_key };
+	const CFArrayRef cf_return_attributes_array = CFArrayCreate(NULL, cf_return_attributes, 2, NULL);
+	
+	CFStringRef cf_app_type_key = create_CFString("ApplicationType");
+	CFStringRef cf_return_attrs_key = create_CFString("ReturnAttributes");
+	const void *client_opts_keys_arr[] = { cf_app_type_key, cf_return_attrs_key };
+	
+	
+	CFStringRef cf_user_value = create_CFString("User");
+	const void *client_opts_values_arr[] = { cf_user_value, cf_return_attributes_array };
+	CFDictionaryRef clinet_opts_dict = CFDictionaryCreate(NULL, client_opts_keys_arr, client_opts_values_arr, 2, NULL, NULL);
+	
+	CFStringRef cf_command_key = create_CFString("Command");
+	CFStringRef cf_client_options_key = create_CFString("ClientOptions");
+	const void *keys_arr[] = { cf_command_key, cf_client_options_key };
+	CFStringRef cf_browse_value = create_CFString("Browse");
+	const void *values_arr[] = { cf_browse_value, clinet_opts_dict };
+	CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 2, NULL, NULL);
 
 	send_con_message(serviceInfo.connection, dict_command);
-    CFRelease(cf_bundle_id_key);
-    CFRelease(cf_config_key);
-    CFRelease(cf_return_attributes_array);
-    CFRelease(cf_app_type_key);
-    CFRelease(cf_return_attrs_key);
-    CFRelease(cf_user_value);
-    CFRelease(clinet_opts_dict);
-    CFRelease(cf_command_key);
-    CFRelease(cf_client_options_key);
-    CFRelease(cf_browse_value);
-    CFRelease(dict_command);
+	CFRelease(cf_bundle_id_key);
+	CFRelease(cf_config_key);
+	CFRelease(cf_return_attributes_array);
+	CFRelease(cf_app_type_key);
+	CFRelease(cf_return_attrs_key);
+	CFRelease(cf_user_value);
+	CFRelease(clinet_opts_dict);
+	CFRelease(cf_command_key);
+	CFRelease(cf_client_options_key);
+	CFRelease(cf_browse_value);
+	CFRelease(dict_command);
 
 	std::vector<json> livesync_app_infos;
 	while (true)
@@ -1092,10 +1092,10 @@ void device_log(std::string device_identifier, std::string method_id)
 
 	char *buffer = new char[kDeviceLogBytesToRead];
 	int bytes_read;
-    
-    // inspired by: https://github.com/DerekSelander/mobdevim/blob/a457f119f1576b85e9f8f89be8713f018ee97f59/mobdevim/console.temp_caseinsensitive_rename.m#L27
+	
+	// inspired by: https://github.com/DerekSelander/mobdevim/blob/a457f119f1576b85e9f8f89be8713f018ee97f59/mobdevim/console.temp_caseinsensitive_rename.m#L27
 	while ((bytes_read = AMDServiceConnectionReceive(serviceInfo.connection, buffer, kDeviceLogBytesToRead)) > 0)
-    {
+	{
 		json message;
 		message[kDeviceId] = device_identifier;
 		message[kMessage] = std::string(buffer, bytes_read);
@@ -1108,41 +1108,41 @@ void device_log(std::string device_identifier, std::string method_id)
 
 void post_notification(std::string device_identifier, PostNotificationInfo post_notification_info, std::string method_id)
 {
-    ServiceInfo info = start_secure_service(device_identifier, kNotificationProxy, method_id, true, true);
+	ServiceInfo info = start_secure_service(device_identifier, kNotificationProxy, method_id, true, true);
 	if (!info.socket)
 	{
 		return;
 	}
-    
-    CFStringRef cf_command_key = create_CFString("Command");
-    CFStringRef cf_command_value = create_CFString(post_notification_info.command_type.c_str());
-    CFStringRef cf_name_key = create_CFString("Name");
-    CFStringRef cf_name_value = create_CFString(post_notification_info.notification_name.c_str());
-    CFStringRef cf_client_options_key = create_CFString("ClientOptions");
-    CFStringRef cf_client_options_value = create_CFString("");
-    const void *keys_arr[] = { cf_command_key, cf_name_key, cf_client_options_key };
-    const void *values_arr[] = { cf_command_value, cf_name_value, cf_client_options_value };
-    CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 3, NULL, NULL);
-    
-    send_con_message(info.connection, dict_command);
-    CFRelease(cf_command_key);
-    CFRelease(cf_command_value);
-    CFRelease(cf_name_key);
-    CFRelease(cf_name_value);
-    CFRelease(cf_client_options_key);
-    CFRelease(cf_client_options_value);
-    CFRelease(dict_command);
-    
+	
+	CFStringRef cf_command_key = create_CFString("Command");
+	CFStringRef cf_command_value = create_CFString(post_notification_info.command_type.c_str());
+	CFStringRef cf_name_key = create_CFString("Name");
+	CFStringRef cf_name_value = create_CFString(post_notification_info.notification_name.c_str());
+	CFStringRef cf_client_options_key = create_CFString("ClientOptions");
+	CFStringRef cf_client_options_value = create_CFString("");
+	const void *keys_arr[] = { cf_command_key, cf_name_key, cf_client_options_key };
+	const void *values_arr[] = { cf_command_value, cf_name_value, cf_client_options_value };
+	CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 3, NULL, NULL);
+	
+	send_con_message(info.connection, dict_command);
+	CFRelease(cf_command_key);
+	CFRelease(cf_command_value);
+	CFRelease(cf_name_key);
+	CFRelease(cf_name_value);
+	CFRelease(cf_client_options_key);
+	CFRelease(cf_client_options_value);
+	CFRelease(dict_command);
+	
 	print(json({ { kResponse, info.connection_id }, { kId, method_id }, { kDeviceId, device_identifier } }));
 }
 
 void await_notification_response(std::string device_identifier, AwaitNotificationResponseInfo await_notification_response_info, std::string method_id)
 {
-    ServiceConnRef connection = serviceConnections[(int)await_notification_response_info.socket];
-    std::string invalid_connection_error_message = "Invalid connectionId: " + std::to_string(await_notification_response_info.socket);
-    PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(connection == nullptr, invalid_connection_error_message.c_str(), device_identifier, method_id);
-    
-    ServiceInfo currentNotificationProxy = devices[device_identifier].services[kNotificationProxy];
+	ServiceConnRef connection = serviceConnections[(int)await_notification_response_info.socket];
+	std::string invalid_connection_error_message = "Invalid connectionId: " + std::to_string(await_notification_response_info.socket);
+	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(connection == nullptr, invalid_connection_error_message.c_str(), device_identifier, method_id);
+	
+	ServiceInfo currentNotificationProxy = devices[device_identifier].services[kNotificationProxy];
 	std::map<std::string, boost::any> response = receive_con_message(connection);
 	if (response.size())
 	{
