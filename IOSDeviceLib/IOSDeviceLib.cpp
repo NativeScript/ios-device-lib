@@ -134,7 +134,6 @@ int start_session(std::string& device_identifier)
 	{
 		const DeviceInfo* device_info = devices[device_identifier].device_info;
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceConnect(device_info), start_session_mutex);
-		assert(AMDeviceIsPaired(device_info));
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceValidatePairing(device_info), start_session_mutex);
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceStartSession(device_info), start_session_mutex);
 	}
@@ -941,16 +940,15 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	CFStringRef cf_return_attrs_key = create_CFString("ReturnAttributes");
 	const void *client_opts_keys_arr[] = { cf_app_type_key, cf_return_attrs_key };
 	
-	
-	CFStringRef cf_user_value = create_CFString("User");
-	const void *client_opts_values_arr[] = { cf_user_value, cf_return_attributes_array };
+	CFStringRef cf_app_type_value = create_CFString("User");
+	const void *client_opts_values_arr[] = { cf_app_type_value, cf_return_attributes_array };
 	CFDictionaryRef clinet_opts_dict = CFDictionaryCreate(NULL, client_opts_keys_arr, client_opts_values_arr, 2, NULL, NULL);
 	
 	CFStringRef cf_command_key = create_CFString("Command");
 	CFStringRef cf_client_options_key = create_CFString("ClientOptions");
 	const void *keys_arr[] = { cf_command_key, cf_client_options_key };
-	CFStringRef cf_browse_value = create_CFString("Browse");
-	const void *values_arr[] = { cf_browse_value, clinet_opts_dict };
+	CFStringRef cf_command_value = create_CFString("Browse");
+	const void *values_arr[] = { cf_command_value, clinet_opts_dict };
 	CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 2, NULL, NULL);
 
 	send_con_message(serviceInfo.connection, dict_command);
@@ -959,11 +957,11 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	CFRelease(cf_return_attributes_array);
 	CFRelease(cf_app_type_key);
 	CFRelease(cf_return_attrs_key);
-	CFRelease(cf_user_value);
+	CFRelease(cf_app_type_value);
 	CFRelease(clinet_opts_dict);
 	CFRelease(cf_command_key);
 	CFRelease(cf_client_options_key);
-	CFRelease(cf_browse_value);
+	CFRelease(cf_command_value);
 	CFRelease(dict_command);
 
 	std::vector<json> livesync_app_infos;
