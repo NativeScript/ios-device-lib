@@ -48,6 +48,9 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 				case Constants.DeviceEventEnum.kDeviceFound:
 					this.emit(Constants.DeviceFoundEventName, message);
 					break;
+				case Constants.DeviceEventEnum.kDeviceUpdated:
+					this.emit(Constants.DeviceUpdatedEventName, message);
+					break;
 				case Constants.DeviceEventEnum.kDeviceLost:
 					this.emit(Constants.DeviceLostEventName, message);
 					break;

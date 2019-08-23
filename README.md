@@ -25,6 +25,8 @@ const dl = new DeviceLib.IOSDeviceLib(device => {
 			});
 		});
 }, device => {
+	console.log("Device UPDATED!", device);
+}, device => {
 	console.log("Device LOST!", device);
 });
 ```

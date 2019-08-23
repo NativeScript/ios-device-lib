@@ -10,6 +10,8 @@ declare global {
 			productType?: string;
 			productVersion?: string;
 			status?: string;
+			isUSBConnected: number;
+			isWiFiConnected: number;
 		}
 
 		interface IDeviceId {
@@ -132,7 +134,7 @@ declare global {
 		}
 
 		interface IOSDeviceLib extends NodeJS.EventEmitter {
-			new(onDeviceFound: (found: IDeviceActionInfo) => void, onDeviceLost: (found: IDeviceActionInfo) => void): IOSDeviceLib;
+			new(onDeviceFound: (found: IDeviceActionInfo) => void, onDeviceUpdated: (updated: IDeviceActionInfo) => void, onDeviceLost: (found: IDeviceActionInfo) => void): IOSDeviceLib;
 			install(ipaPath: string, deviceIdentifiers: string[]): Promise<IDeviceResponse>[];
 			uninstall(ipaPath: string, deviceIdentifiers: string[]): Promise<IDeviceResponse>[];
 			list(listArray: IReadOperationData[]): Promise<IDeviceMultipleResponse>[];

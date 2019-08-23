@@ -27,12 +27,13 @@ const Events = {
 };
 
 class IOSDeviceLib extends EventEmitter {
-	constructor(onDeviceFound, onDeviceLost, options) {
+	constructor(onDeviceFound, onDeviceUpdated, onDeviceLost, options) {
 		super();
 		this._options = options || {};
 		this._iosDeviceLibStdioHandler = new IOSDeviceLibStdioHandler(this._options);
 		this._iosDeviceLibStdioHandler.startReadingData();
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceFoundEventName, onDeviceFound);
+		this._iosDeviceLibStdioHandler.on(Constants.DeviceUpdatedEventName, onDeviceUpdated);
 		this._iosDeviceLibStdioHandler.on(Constants.DeviceLostEventName, onDeviceLost);
 	}
 
