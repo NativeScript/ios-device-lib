@@ -10,6 +10,7 @@ declare global {
 			productType?: string;
 			productVersion?: string;
 			status?: string;
+			connectionType: number;
 		}
 
 		interface IDeviceId {

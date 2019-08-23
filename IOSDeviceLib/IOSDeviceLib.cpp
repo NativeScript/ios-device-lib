@@ -134,6 +134,7 @@ int start_session(std::string& device_identifier)
 	{
 		const DeviceInfo* device_info = devices[device_identifier].device_info;
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceConnect(device_info), start_session_mutex);
+        assert(AMDeviceIsPaired(device_info));
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceValidatePairing(device_info), start_session_mutex);
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceStartSession(device_info), start_session_mutex);
 	}
@@ -242,6 +243,10 @@ void get_device_properties(std::string device_identifier, json &result)
 	result["deviceName"] = get_device_property_value(device_identifier, "DeviceName");
 	result["productVersion"] = get_device_property_value(device_identifier, kProductVersion);
 	result["deviceColor"] = get_device_property_value(device_identifier, "DeviceColor");
+    //    available values:
+    //    "BluetoothAddress","BoardId","CPUArchitecture","ChipID","DeviceClass",
+    //    "DeviceColor","DeviceName","FirmwareVersion","HardwareModel",
+    //    "ModelNumber","ProductType","ProductVersion","UniqueDeviceID","WiFiAddress"
 }
 
 inline bool has_complete_status(std::map<std::string, boost::any>& dict)
@@ -259,11 +264,12 @@ void on_device_found(const DevicePointer* device_ptr, std::string device_identif
 		2 - wifi interface type
 	*/
 	int interface_type = AMDeviceGetInterfaceType(device_ptr->device_info);
-	if (interface_type == kUSBInterfaceType) {
+	if (interface_type == kUSBInterfaceType || interface_type == kWIFIInterfaceType) {
 		devices[device_identifier] = { device_ptr->device_info, nullptr };
 		result[kEventString] = eventString;
+        result[kConnectionType] = interface_type;
 		get_device_properties(device_identifier, result);
-	}
+    }
 }
 
 void device_notification_callback(const DevicePointer* device_ptr)
@@ -497,14 +503,16 @@ void uninstall_application(std::string application_identifier, std::string devic
 		return;
 	}
 
-	HANDLE socket = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false).socket;
-	if (!socket)
+	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false);
+	if (!serviceInfo.socket)
 	{
 		return;
 	}
 
 	CFStringRef appid_cfstring = create_CFString(application_identifier.c_str());
-	unsigned result = AMDeviceUninstallApplication(socket, appid_cfstring, NULL, [] {}, NULL);
+    DeviceInfo* deviceInfo = devices[device_identifier].device_info;
+    CFDictionaryRef params = CFDictionaryCreate(NULL, {}, {}, 0, NULL, NULL);
+    unsigned result = AMDeviceSecureUninstallApplication(serviceInfo.connection, deviceInfo, appid_cfstring, params, NULL);
 	CFRelease(appid_cfstring);
 
 	if (result)
@@ -1137,7 +1145,7 @@ void post_notification(std::string device_identifier, PostNotificationInfo post_
 void await_notification_response(std::string device_identifier, AwaitNotificationResponseInfo await_notification_response_info, std::string method_id)
 {
 	ServiceConnRef connection = serviceConnections[(int)await_notification_response_info.socket];
-	std::string invalid_connection_error_message = "Invalid connectionId: " + std::to_string(await_notification_response_info.socket);
+	std::string invalid_connection_error_message = "Invalid socket: " + std::to_string(await_notification_response_info.socket);
 	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(connection == nullptr, invalid_connection_error_message.c_str(), device_identifier, method_id);
 	
 	ServiceInfo currentNotificationProxy = devices[device_identifier].services[kNotificationProxy];

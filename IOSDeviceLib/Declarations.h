@@ -168,7 +168,7 @@ typedef void(__cdecl *cfdictionary_get_keys_and_values)(CFDictionaryRef, const v
 typedef CFStringRef(__cdecl *cfstring_create_with_cstring)(void*, const char*, unsigned);
 typedef CFArrayRef(__cdecl *cfarray_create)(void*, const void**, long, void**);
 typedef unsigned(__cdecl *device_secure_operation_with_path)(int, const DeviceInfo*, CFURLRef, CFDictionaryRef, void(*f)(), int);
-typedef unsigned(__cdecl *device_secure_operation_with_bundle_id)(int, const DeviceInfo*, CFStringRef, int, void(*f)(), int);
+typedef unsigned(__cdecl *device_secure_operation_with_bundle_id)(ServiceConnRef connection, const DeviceInfo*, CFStringRef *bundleIdentifier, CFDictionaryRef *params, void (*installCallback)(CFDictionaryRef*, void *));
 typedef void(__cdecl *cfrelease)(CFStringRef);
 
 typedef CFDictionaryRef(__cdecl *cfdictionary_create)(void *, void*, void*, int, void*, void*);
@@ -276,8 +276,8 @@ extern "C"
 	unsigned AMDeviceCreateHouseArrestService(const DeviceInfo*, CFStringRef identifier, void * unknown, AFCConnectionRef * handle);
 	int AMDeviceGetConnectionID(const DeviceInfo*);
 	int AMDeviceGetInterfaceType(const DeviceInfo*);
+    unsigned AMDeviceSecureUninstallApplication(ServiceConnRef connection, const DeviceInfo*, CFStringRef bundleIdentifier, CFDictionaryRef params, void (*installCallback)(CFDictionaryRef*, void *));
 	unsigned AMDeviceUninstallApplication(HANDLE, CFStringRef, void*, void(*f)(), void*);
-	unsigned AMDeviceSecureUninstallApplication(int, const DeviceInfo*, CFStringRef, int, void(*f)(), int);
 	unsigned AMDeviceStartSession(const DeviceInfo*);
 	unsigned AMDeviceStopSession(const DeviceInfo*);
 	unsigned AMDeviceConnect(const DeviceInfo*);
