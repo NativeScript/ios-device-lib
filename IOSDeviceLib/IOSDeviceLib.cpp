@@ -134,7 +134,7 @@ int start_session(std::string& device_identifier)
 	{
 		const DeviceInfo* device_info = devices[device_identifier].device_info;
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceConnect(device_info), start_session_mutex);
-        assert(AMDeviceIsPaired(device_info));
+		assert(AMDeviceIsPaired(device_info));
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceValidatePairing(device_info), start_session_mutex);
 		UNLOCK_MUTEX_AND_RETURN_IF_FAILED_RESULT(AMDeviceStartSession(device_info), start_session_mutex);
 	}
@@ -243,10 +243,10 @@ void get_device_properties(std::string device_identifier, json &result)
 	result["deviceName"] = get_device_property_value(device_identifier, "DeviceName");
 	result["productVersion"] = get_device_property_value(device_identifier, kProductVersion);
 	result["deviceColor"] = get_device_property_value(device_identifier, "DeviceColor");
-    //    available values:
-    //    "BluetoothAddress","BoardId","CPUArchitecture","ChipID","DeviceClass",
-    //    "DeviceColor","DeviceName","FirmwareVersion","HardwareModel",
-    //    "ModelNumber","ProductType","ProductVersion","UniqueDeviceID","WiFiAddress"
+	//    available values:
+	//    "BluetoothAddress","BoardId","CPUArchitecture","ChipID","DeviceClass",
+	//    "DeviceColor","DeviceName","FirmwareVersion","HardwareModel",
+	//    "ModelNumber","ProductType","ProductVersion","UniqueDeviceID","WiFiAddress"
 }
 
 inline bool has_complete_status(std::map<std::string, boost::any>& dict)
@@ -254,7 +254,15 @@ inline bool has_complete_status(std::map<std::string, boost::any>& dict)
 	return boost::any_cast<std::string>(dict[kStatusKey]) == kComplete;
 }
 
-void on_device_found(const DevicePointer* device_ptr, std::string device_identifier, std::string eventString, json &result)
+
+void update_device_result(std::string device_identifier, json &result)
+{
+	result[kIsUSBConnected] = devices[device_identifier].isUSBConnected;
+	result[kIsWiFiConnected] = devices[device_identifier].isWiFiConnected;
+	get_device_properties(device_identifier, result);
+}
+
+void on_device_found(const DevicePointer* device_ptr, std::string device_identifier, json &result)
 {
 	/*
 	Interface type can be one of the followings:
@@ -265,11 +273,23 @@ void on_device_found(const DevicePointer* device_ptr, std::string device_identif
 	*/
 	int interface_type = AMDeviceGetInterfaceType(device_ptr->device_info);
 	if (interface_type == kUSBInterfaceType || interface_type == kWIFIInterfaceType) {
-		devices[device_identifier] = { device_ptr->device_info, nullptr };
-		result[kEventString] = eventString;
-        result[kConnectionType] = interface_type;
-		get_device_properties(device_identifier, result);
-    }
+		if (devices.count(device_identifier)) {
+			devices[device_identifier].device_info = device_ptr->device_info;
+			result[kEventString] = kDeviceUpdated;
+		} else {
+			devices[device_identifier] = { device_ptr->device_info, nullptr };
+			result[kEventString] = kDeviceFound;
+		}
+		
+
+		if (interface_type == kUSBInterfaceType) {
+			devices[device_identifier].isUSBConnected = 1;
+		} else {
+			devices[device_identifier].isWiFiConnected = 1;
+		}
+		
+		update_device_result(device_identifier, result);
+	}
 }
 
 void device_notification_callback(const DevicePointer* device_ptr)
@@ -281,21 +301,33 @@ void device_notification_callback(const DevicePointer* device_ptr)
 	{
 		case kADNCIMessageConnected:
 		{
-			on_device_found(device_ptr, device_identifier, kDeviceFound, result);
+			on_device_found(device_ptr, device_identifier, result);
 			break;
 		}
 		case kADNCIMessageDisconnected:
 		{
-			if (devices.count(device_identifier))
-			{
-				if (devices[device_identifier].apps_cache.size())
-				{
-					cleanup_file_resources(device_identifier);
+			if (devices.count(device_identifier)) {
+                int interface_type = AMDeviceGetInterfaceType(device_ptr->device_info);
+				if (interface_type == kUSBInterfaceType) {
+					devices[device_identifier].isUSBConnected = 0;
+				} else if (interface_type == kWIFIInterfaceType) {
+					devices[device_identifier].isWiFiConnected = 0;
 				}
+				
+				if (!devices[device_identifier].isUSBConnected && !devices[device_identifier].isWiFiConnected) {
+					if (devices[device_identifier].apps_cache.size())
+					{
+						cleanup_file_resources(device_identifier);
+					}
 
-				devices.erase(device_identifier);
+					devices.erase(device_identifier);
+					result[kEventString] = kDeviceLost;
+				} else {
+					result[kEventString] = kDeviceUpdated;
+					update_device_result(device_identifier, result);
+				}
 			}
-			result[kEventString] = kDeviceLost;
+
 			break;
 		}
 		case kADNCIMessageUnknown:
@@ -305,7 +337,7 @@ void device_notification_callback(const DevicePointer* device_ptr)
 		}
 		case kADNCIMessageTrusted:
 		{
-			on_device_found(device_ptr, device_identifier, kDeviceTrusted, result);
+			on_device_found(device_ptr, device_identifier, result);
 			break;
 		}
 	}
@@ -510,9 +542,9 @@ void uninstall_application(std::string application_identifier, std::string devic
 	}
 
 	CFStringRef appid_cfstring = create_CFString(application_identifier.c_str());
-    DeviceInfo* deviceInfo = devices[device_identifier].device_info;
-    CFDictionaryRef params = CFDictionaryCreate(NULL, {}, {}, 0, NULL, NULL);
-    unsigned result = AMDeviceSecureUninstallApplication(serviceInfo.connection, deviceInfo, appid_cfstring, params, NULL);
+	DeviceInfo* deviceInfo = devices[device_identifier].device_info;
+	CFDictionaryRef params = CFDictionaryCreate(NULL, {}, {}, 0, NULL, NULL);
+	unsigned result = AMDeviceSecureUninstallApplication(serviceInfo.connection, deviceInfo, appid_cfstring, params, NULL);
 	CFRelease(appid_cfstring);
 
 	if (result)

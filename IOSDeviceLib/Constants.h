@@ -40,6 +40,7 @@ static const char *kUnreachableStatus = "Unreachable";
 static const char *kConnectedStatus = "Connected";
 
 static const char *kDeviceFound = "deviceFound";
+static const char *kDeviceUpdated = "deviceUpdated";
 static const char *kDeviceLost = "deviceLost";
 static const char *kDeviceTrusted = "deviceTrusted";
 static const char *kDeviceUnknown = "deviceUnknown";
@@ -70,7 +71,8 @@ static const char *kResponseCommandType = "responseCommandType";
 static const char *kResponsePropertyName = "responsePropertyName";
 static const char *kShouldWaitForResponse = "shouldWaitForResponse";
 static const char *kCommandType = "commandType";
-static const char *kConnectionType = "connectionType";
+static const char *kIsWiFiConnected = "isWiFiConnected";
+static const char *kIsUSBConnected = "isUSBConnected";
 static const char *kTimeout = "timeout";
 static const char *kPort = "port";
 static const char *kHost = "host";
