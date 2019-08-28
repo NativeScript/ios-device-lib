@@ -149,10 +149,12 @@ typedef void* CFSocketNativeHandle;
 typedef unsigned(__cdecl *device_secure_start_service_ptr)(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
 typedef CFSocketNativeHandle(__cdecl *service_connection_get_socket_ptr)(ServiceConnRef con);
 typedef long(__cdecl *service_connection_receive_ptr)(ServiceConnRef, void *, long);
+typedef void(__cdecl *service_connection_invalidate_ptr)(ServiceConnRef);
 typedef long(__cdecl *service_connection_send_message_ptr)(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
 
 extern service_connection_send_message_ptr __AMDServiceConnectionSendMessage;
 extern service_connection_receive_ptr __AMDServiceConnectionReceive;
+extern service_connection_invalidate_ptr __AMDServiceConnectionInvalidate;
 
 typedef unsigned(__cdecl *device_create_house_arrest_service_ptr)(const DeviceInfo*, CFStringRef identifier, void * unknown, AFCConnectionRef * handle);
 
@@ -210,6 +212,7 @@ extern HINSTANCE mobile_device_dll;
 #define AMDeviceNotificationSubscribe GET_IF_EXISTS(__AMDeviceNotificationSubscribe, device_notification_subscribe_ptr, mobile_device_dll, "AMDeviceNotificationSubscribe")
 #define AMDeviceCopyDeviceIdentifier GET_IF_EXISTS(__AMDeviceCopyDeviceIdentifier, device_copy_device_identifier, mobile_device_dll, "AMDeviceCopyDeviceIdentifier")
 #define AMDeviceCopyValue GET_IF_EXISTS(__AMDeviceCopyValue, device_copy_value, mobile_device_dll, "AMDeviceCopyValue")
+#define AMDServiceConnectionInvalidate GET_IF_EXISTS(__AMDServiceConnectionInvalidate, service_connection_invalidate_ptr, mobile_device_dll, "AMDServiceConnectionInvalidate")
 #define AMDeviceStartService GET_IF_EXISTS(__AMDeviceStartService, device_start_service, mobile_device_dll, "AMDeviceStartService")
 #define AMDeviceUninstallApplication GET_IF_EXISTS(__AMDeviceUninstallApplication, device_uninstall_application, mobile_device_dll, "AMDeviceUninstallApplication")
 #define AMDeviceSecureUninstallApplication GET_IF_EXISTS(__AMDeviceSecureUninstallApplication, device_secure_operation_with_bundle_id, mobile_device_dll, "AMDeviceSecureUninstallApplication")
