@@ -1002,7 +1002,7 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	std::vector<json> livesync_app_infos;
 	while (true)
 	{
-		std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection, device_identifier, method_id, 0);
+		std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection, device_identifier, method_id, 10);
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(dict.count(kErrorKey), boost::any_cast<std::string>(dict[kErrorKey]).c_str(), device_identifier, method_id);
 		if (dict.empty() || (dict.count(kStatusKey) && has_complete_status(dict)))
 		{
