@@ -210,11 +210,6 @@ void cleanup_file_resources(const std::string& device_identifier, const std::str
 		AFCConnectionClose(afc_connection_to_close);
 		devices[device_identifier].apps_cache.erase(application_identifier);
 	}
-
-	if (devices[device_identifier].services.count(kHouseArrest))
-	{
-		devices[device_identifier].services.erase(kHouseArrest);
-	}
 }
 
 void cleanup_file_resources(const std::string& device_identifier)
@@ -982,13 +977,13 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	
 	CFStringRef cf_app_type_value = create_CFString("User");
 	const void *client_opts_values_arr[] = { cf_app_type_value, cf_return_attributes_array };
-	CFDictionaryRef clinet_opts_dict = CFDictionaryCreate(NULL, client_opts_keys_arr, client_opts_values_arr, 2, NULL, NULL);
+	CFDictionaryRef client_opts_dict = CFDictionaryCreate(NULL, client_opts_keys_arr, client_opts_values_arr, 2, NULL, NULL);
 	
 	CFStringRef cf_command_key = create_CFString("Command");
 	CFStringRef cf_client_options_key = create_CFString("ClientOptions");
 	const void *keys_arr[] = { cf_command_key, cf_client_options_key };
 	CFStringRef cf_command_value = create_CFString("Browse");
-	const void *values_arr[] = { cf_command_value, clinet_opts_dict };
+	const void *values_arr[] = { cf_command_value, client_opts_dict };
 	CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 2, NULL, NULL);
 
 	send_con_message(serviceInfo.connection, dict_command);
@@ -998,7 +993,7 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	CFRelease(cf_app_type_key);
 	CFRelease(cf_return_attrs_key);
 	CFRelease(cf_app_type_value);
-	CFRelease(clinet_opts_dict);
+	CFRelease(client_opts_dict);
 	CFRelease(cf_command_key);
 	CFRelease(cf_client_options_key);
 	CFRelease(cf_command_value);
