@@ -21,11 +21,13 @@ std::map<std::string, boost::any> receive_con_message(ServiceConnRef con, std::s
     
     bool isSuccessful = false;
     
-    setTimeout([=]() {
-        if (!isSuccessful) {
-            AMDServiceConnectionInvalidate(con);
-        }
-    }, timeout);
+    if (timeout > 0) {
+        setTimeout([=]() {
+            if (!isSuccessful) {
+                AMDServiceConnectionInvalidate(con);
+            }
+        }, timeout);
+    }
     
     std::map<std::string, boost::any> dict;
     char *buffer = new char[4];
