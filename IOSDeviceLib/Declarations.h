@@ -267,6 +267,7 @@ extern "C"
 {
 	CFSocketNativeHandle  AMDServiceConnectionGetSocket(ServiceConnRef con);
 	long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
+	void AMDServiceConnectionInvalidate(ServiceConnRef);
 	long AMDServiceConnectionSendMessage(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
 	unsigned AMDeviceSecureStartService(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
 	unsigned AMDeviceNotificationSubscribe(void(*f)(const DevicePointer*), long, long, long, HANDLE*);

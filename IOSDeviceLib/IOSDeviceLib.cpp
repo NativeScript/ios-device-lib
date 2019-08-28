@@ -210,11 +210,6 @@ void cleanup_file_resources(const std::string& device_identifier, const std::str
 		AFCConnectionClose(afc_connection_to_close);
 		devices[device_identifier].apps_cache.erase(application_identifier);
 	}
-
-	if (devices[device_identifier].services.count(kHouseArrest))
-	{
-		devices[device_identifier].services.erase(kHouseArrest);
-	}
 }
 
 void cleanup_file_resources(const std::string& device_identifier)
@@ -982,13 +977,13 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	
 	CFStringRef cf_app_type_value = create_CFString("User");
 	const void *client_opts_values_arr[] = { cf_app_type_value, cf_return_attributes_array };
-	CFDictionaryRef clinet_opts_dict = CFDictionaryCreate(NULL, client_opts_keys_arr, client_opts_values_arr, 2, NULL, NULL);
+	CFDictionaryRef client_opts_dict = CFDictionaryCreate(NULL, client_opts_keys_arr, client_opts_values_arr, 2, NULL, NULL);
 	
 	CFStringRef cf_command_key = create_CFString("Command");
 	CFStringRef cf_client_options_key = create_CFString("ClientOptions");
 	const void *keys_arr[] = { cf_command_key, cf_client_options_key };
 	CFStringRef cf_command_value = create_CFString("Browse");
-	const void *values_arr[] = { cf_command_value, clinet_opts_dict };
+	const void *values_arr[] = { cf_command_value, client_opts_dict };
 	CFDictionaryRef dict_command = CFDictionaryCreate(NULL, keys_arr, values_arr, 2, NULL, NULL);
 
 	send_con_message(serviceInfo.connection, dict_command);
@@ -998,7 +993,7 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	CFRelease(cf_app_type_key);
 	CFRelease(cf_return_attrs_key);
 	CFRelease(cf_app_type_value);
-	CFRelease(clinet_opts_dict);
+	CFRelease(client_opts_dict);
 	CFRelease(cf_command_key);
 	CFRelease(cf_client_options_key);
 	CFRelease(cf_command_value);
@@ -1007,7 +1002,7 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	std::vector<json> livesync_app_infos;
 	while (true)
 	{
-		std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection);
+		std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection, device_identifier, method_id, 10);
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(dict.count(kErrorKey), boost::any_cast<std::string>(dict[kErrorKey]).c_str(), device_identifier, method_id);
 		if (dict.empty() || (dict.count(kStatusKey) && has_complete_status(dict)))
 		{
@@ -1181,7 +1176,7 @@ void await_notification_response(std::string device_identifier, AwaitNotificatio
 	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(connection == nullptr, invalid_connection_error_message.c_str(), device_identifier, method_id);
 	
 	ServiceInfo currentNotificationProxy = devices[device_identifier].services[kNotificationProxy];
-	std::map<std::string, boost::any> response = receive_con_message(connection);
+	std::map<std::string, boost::any> response = receive_con_message(connection, device_identifier, method_id, await_notification_response_info.timeout);
 	if (response.size())
 	{
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response.count(kErrorKey), boost::any_cast<std::string>(response[kErrorKey]).c_str(), device_identifier, method_id);
