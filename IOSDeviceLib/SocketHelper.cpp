@@ -7,10 +7,26 @@
 #include "PlistCpp/Plist.hpp"
 #include "PlistCpp/PlistDate.hpp"
 
+void setTimeout(std::function<void()> operation, int timeout) {
+    std::thread([=]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(timeout * 1000));
+        operation();
+    }).detach();
+}
+
 std::mutex receive_con_message_mutex;
-std::map<std::string, boost::any> receive_con_message(ServiceConnRef con)
+std::map<std::string, boost::any> receive_con_message(ServiceConnRef con, std::string device_identifier, std::string method_id, int timeout)
 {
     receive_con_message_mutex.lock();
+    
+    bool isSuccessful = false;
+    
+    setTimeout([=]() {
+        if (!isSuccessful) {
+            AMDServiceConnectionInvalidate(con);
+        }
+    }, timeout);
+    
     std::map<std::string, boost::any> dict;
     char *buffer = new char[4];
     int bytes_read = AMDServiceConnectionReceive(con, buffer, 4);
@@ -23,6 +39,7 @@ std::map<std::string, boost::any> receive_con_message(ServiceConnRef con)
         if (bytes_read > 0)
         {
             Plist::readPlist(buffer, res, dict);
+            isSuccessful = true;
         }
     }
 
