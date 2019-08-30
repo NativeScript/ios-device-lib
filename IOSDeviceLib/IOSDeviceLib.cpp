@@ -531,7 +531,7 @@ void uninstall_application(std::string application_identifier, std::string devic
 		return;
 	}
 
-	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false);
+	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, true);
 	if (!serviceInfo.socket)
 	{
 		return;
@@ -961,7 +961,7 @@ void read_file(std::string device_identifier, const char *application_identifier
 
 void get_application_infos(std::string device_identifier, std::string method_id)
 {
-	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false);
+	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, true);
 	if (!serviceInfo.socket)
 	{
 		return;
