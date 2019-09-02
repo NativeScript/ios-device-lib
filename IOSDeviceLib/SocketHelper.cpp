@@ -7,52 +7,61 @@
 #include "PlistCpp/Plist.hpp"
 #include "PlistCpp/PlistDate.hpp"
 
-void setTimeout(std::function<void()> operation, int timeout) {
-    std::thread([=]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(timeout * 1000));
-        operation();
-    }).detach();
+std::thread::native_handle_type setTimeout(std::function<void()> operation, int timeout) {
+	std::thread thread = std::thread([=]() {
+		std::this_thread::sleep_for(std::chrono::milliseconds(timeout * 1000));
+		operation();
+	});
+	
+	std::thread::native_handle_type native = thread.native_handle();
+	thread.detach();
+	
+	return native;
 }
 
+void clearTimeout(std::thread::native_handle_type nativeHandle) {
+	if (nativeHandle) {
+	   pthread_cancel(nativeHandle);
+	}
+}
+	
 std::mutex receive_con_message_mutex;
 std::map<std::string, boost::any> receive_con_message(ServiceConnRef con, std::string device_identifier, std::string method_id, int timeout)
 {
-    receive_con_message_mutex.lock();
-    
-    bool isSuccessful = false;
-    
-    if (timeout > 0) {
-        setTimeout([=]() {
-            if (!isSuccessful) {
-                AMDServiceConnectionInvalidate(con);
-            }
-        }, timeout);
-    }
-    
-    std::map<std::string, boost::any> dict;
-    char *buffer = new char[4];
-    int bytes_read = AMDServiceConnectionReceive(con, buffer, 4);
-    if (bytes_read > 0)
-    {
-        unsigned long res = ntohl(*((unsigned long*)buffer));
-        delete[] buffer;
-        buffer = new char[res];
-        bytes_read = AMDServiceConnectionReceive(con, buffer, res);
-        if (bytes_read > 0)
-        {
-            Plist::readPlist(buffer, res, dict);
-            isSuccessful = true;
-        }
-    }
+	receive_con_message_mutex.lock();
 
-    delete[] buffer;
-    receive_con_message_mutex.unlock();
-    return dict;
+	std::thread::native_handle_type nativeHandle;
+	
+	if (timeout > 0) {
+		nativeHandle = setTimeout([=]() {
+			AMDServiceConnectionInvalidate(con);
+		}, timeout);
+	}
+	
+	std::map<std::string, boost::any> dict;
+	char *buffer = new char[4];
+	int bytes_read = AMDServiceConnectionReceive(con, buffer, 4);
+	if (bytes_read > 0)
+	{
+		unsigned long res = ntohl(*((unsigned long*)buffer));
+		delete[] buffer;
+		buffer = new char[res];
+		bytes_read = AMDServiceConnectionReceive(con, buffer, res);
+		if (bytes_read > 0)
+		{
+			Plist::readPlist(buffer, res, dict);
+			clearTimeout(nativeHandle);
+		}
+	}
+
+	delete[] buffer;
+	receive_con_message_mutex.unlock();
+	return dict;
 }
 
 long send_con_message(ServiceConnRef serviceConnection, CFDictionaryRef message)
 {
-    return AMDServiceConnectionSendMessage(serviceConnection, message, kCFPropertyListXMLFormat_v1_0);
+	return AMDServiceConnectionSendMessage(serviceConnection, message, kCFPropertyListXMLFormat_v1_0);
 }
 
 int send_message(const char* message, SOCKET socket, long long length)
