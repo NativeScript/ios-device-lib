@@ -7,25 +7,34 @@
 #include "PlistCpp/Plist.hpp"
 #include "PlistCpp/PlistDate.hpp"
 
-void setTimeout(std::function<void()> operation, int timeout) {
-    std::thread([=]() {
+std::thread::native_handle_type setTimeout(std::function<void()> operation, int timeout) {
+    std::thread thread = std::thread([=]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(timeout * 1000));
         operation();
-    }).detach();
+    });
+    
+    std::thread::native_handle_type native = thread.native_handle();
+    thread.detach();
+    
+    return native;
 }
 
+void clearTimeout(std::thread::native_handle_type nativeHandle) {
+    if (nativeHandle) {
+       pthread_cancel(nativeHandle);
+    }
+}
+    
 std::mutex receive_con_message_mutex;
 std::map<std::string, boost::any> receive_con_message(ServiceConnRef con, std::string device_identifier, std::string method_id, int timeout)
 {
     receive_con_message_mutex.lock();
-    
-    bool isSuccessful = false;
+
+    std::thread::native_handle_type nativeHandle;
     
     if (timeout > 0) {
-        setTimeout([=]() {
-            if (!isSuccessful) {
-                AMDServiceConnectionInvalidate(con);
-            }
+        nativeHandle = setTimeout([=]() {
+            AMDServiceConnectionInvalidate(con);
         }, timeout);
     }
     
@@ -41,7 +50,7 @@ std::map<std::string, boost::any> receive_con_message(ServiceConnRef con, std::s
         if (bytes_read > 0)
         {
             Plist::readPlist(buffer, res, dict);
-            isSuccessful = true;
+            clearTimeout(nativeHandle);
         }
     }
 

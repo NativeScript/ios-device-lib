@@ -531,7 +531,7 @@ void uninstall_application(std::string application_identifier, std::string devic
 		return;
 	}
 
-	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, true);
+	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false);
 	if (!serviceInfo.socket)
 	{
 		return;
@@ -961,7 +961,7 @@ void read_file(std::string device_identifier, const char *application_identifier
 
 void get_application_infos(std::string device_identifier, std::string method_id)
 {
-	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, true);
+	ServiceInfo serviceInfo = start_secure_service(device_identifier, kInstallationProxy, method_id, true, false);
 	if (!serviceInfo.socket)
 	{
 		return;
@@ -1003,7 +1003,7 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	std::vector<json> livesync_app_infos;
 	while (true)
 	{
-		std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection, device_identifier, method_id, 10);
+        std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection, device_identifier, method_id, 0);
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(dict.count(kErrorKey), boost::any_cast<std::string>(dict[kErrorKey]).c_str(), device_identifier, method_id);
 		if (dict.empty() || (dict.count(kStatusKey) && has_complete_status(dict)))
 		{
