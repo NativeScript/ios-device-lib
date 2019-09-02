@@ -303,7 +303,7 @@ void device_notification_callback(const DevicePointer* device_ptr)
 		case kADNCIMessageDisconnected:
 		{
 			if (devices.count(device_identifier)) {
-                int interface_type = AMDeviceGetInterfaceType(device_ptr->device_info);
+				int interface_type = AMDeviceGetInterfaceType(device_ptr->device_info);
 				if (interface_type == kUSBInterfaceType) {
 					devices[device_identifier].isUSBConnected = 0;
 				} else if (interface_type == kWIFIInterfaceType) {
@@ -1003,7 +1003,7 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	std::vector<json> livesync_app_infos;
 	while (true)
 	{
-        std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection, device_identifier, method_id, 0);
+		std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection, device_identifier, method_id, 0);
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(dict.count(kErrorKey), boost::any_cast<std::string>(dict[kErrorKey]).c_str(), device_identifier, method_id);
 		if (dict.empty() || (dict.count(kStatusKey) && has_complete_status(dict)))
 		{
