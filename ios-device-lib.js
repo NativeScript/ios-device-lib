@@ -168,7 +168,22 @@ class IOSDeviceLib extends EventEmitter {
 	}
 
 	_getMessage(id, name, args) {
-		return JSON.stringify({ methods: [{ id: id, name: name, args: args }] }) + '\n';
+		return JSON.stringify({ methods: [{ id: id, name: name, args: args }] },
+			(key, value) => {
+				// Our JSON parser can work only with string values
+				// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify#The_replacer_parameter
+				if (value === null) {
+					// Skip null values. When we return undefined, the property will be skipped.
+					return undefined;
+				}
+
+				if (value === true || value === false || typeof value === 'number') {
+					return value.toString();
+				}
+
+				return value;
+			}
+		) + '\n';
 	}
 }
 
