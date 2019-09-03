@@ -15,12 +15,23 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 	}
 
 	startReadingData() {
-		this._chProc = spawn(path.join(__dirname, "bin", os.platform(), os.arch(), "ios-device-lib").replace("app.asar", "app.asar.unpacked"));
+		const pathToBinary = path.join(__dirname, "bin", os.platform(), os.arch(), "ios-device-lib").replace("app.asar", "app.asar.unpacked");
+		this._chProc = spawn(pathToBinary);
 
 		const stdinMessageUnpackStream = new MessageUnpackStream();
 		this._chProc.stdout.pipe(stdinMessageUnpackStream);
 		stdinMessageUnpackStream.on("data", (data) => {
 			this._distributeMessage(this._parseMessageFromBuffer(data));
+		});
+
+		this._chProc.on("error", (err) => {
+			throw new Error(`Unable to start child process ${pathToBinary}. ${err}`);
+		});
+
+		this._chProc.on("close", (exitCode) => {
+			if (exitCode !== 0) {
+				throw new Error(`Process ${pathToBinary} exited with code ${exitCode}.`);
+			}
 		});
 
 		if (this._showDebugInformation) {
