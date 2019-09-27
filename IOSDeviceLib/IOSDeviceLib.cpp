@@ -21,6 +21,7 @@
 #include "Printing.h"
 #include "CommonFunctions.h"
 #include "ServerHelper.h"
+#include "SetTimeout.h"
 
 #ifdef _WIN32
 #pragma region Dll_Variable_Definitions
@@ -444,6 +445,7 @@ ServiceInfo start_secure_service(std::string device_identifier, const char* serv
 	serviceInfoResult.socket = socket;
 	serviceInfoResult.connection = connection;
 	serviceInfoResult.connection_id = nextServiceConnectionId;
+	serviceInfoResult.service_name = service_name;
 	serviceConnections[nextServiceConnectionId] = connection;
 	nextServiceConnectionId++;
 
@@ -638,6 +640,53 @@ void perform_detached_operation(void(*operation)(std::string, std::string, std::
 	std::vector<std::string> device_identifiers = method_args[1].get<std::vector<std::string>>();
 	for (std::string &device_identifier : device_identifiers)
 		std::thread([operation, first_arg, device_identifier, method_id]() { operation(first_arg, device_identifier, method_id);  }).detach();
+}
+
+std::mutex clean_con_resources_mutex;
+void clean_con_resources(void* data)
+{
+	clean_con_resources_mutex.lock();
+	ConnectionMessageData* connectionMessageData = reinterpret_cast<ConnectionMessageData*>(data);
+	ServiceConnRef conn = connectionMessageData->conn;
+	devices[connectionMessageData->device_identifier].services.erase(connectionMessageData->service_name.c_str());
+	AMDServiceConnectionInvalidate(conn);
+	clean_con_resources_mutex.unlock();
+}
+
+std::mutex receive_con_message_mutex;
+std::map<std::string, boost::any> receive_con_message(ConnectionMessageData data)
+{
+	receive_con_message_mutex.lock();
+	
+	ServiceConnRef conn = data.conn;
+	TimeoutOutputData timeoutOutputData = setTimeout(data.timeout, &data, clean_con_resources);
+
+	std::map<std::string, boost::any> dict;
+	char *buffer = new char[4];
+	int bytes_read = AMDServiceConnectionReceive(conn, buffer, 4);
+	if (bytes_read > 0)
+	{
+		unsigned long res = ntohl(*((unsigned long*)buffer));
+		delete[] buffer;
+		buffer = new char[res];
+		bytes_read = AMDServiceConnectionReceive(conn, buffer, res);
+		if (bytes_read > 0)
+		{
+			Plist::readPlist(buffer, res, dict);
+			clearTimeout(timeoutOutputData);
+		}
+	} else {
+		clearTimeout(timeoutOutputData);
+	}
+
+	delete[] buffer;
+	receive_con_message_mutex.unlock();
+	return dict;
+}
+
+long send_con_message(ServiceConnRef serviceConnection, CFDictionaryRef message)
+{
+	return AMDServiceConnectionSendMessage(serviceConnection, message, kCFPropertyListXMLFormat_v1_0);
 }
 
 void read_dir(AFCConnectionRef afc_conn_p, const char* dir, json &files, std::stringstream &errors, std::string method_id, std::string device_identifier)
@@ -1003,7 +1052,8 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	std::vector<json> livesync_app_infos;
 	while (true)
 	{
-		std::map<std::string, boost::any> dict = receive_con_message(serviceInfo.connection, device_identifier, method_id, 0);
+		ConnectionMessageData connectionMessageData = { serviceInfo.connection, device_identifier, method_id, kInstallationProxy, 10 };
+		std::map<std::string, boost::any> dict = receive_con_message(connectionMessageData);
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(dict.count(kErrorKey), boost::any_cast<std::string>(dict[kErrorKey]).c_str(), device_identifier, method_id);
 		if (dict.empty() || (dict.count(kStatusKey) && has_complete_status(dict)))
 		{
@@ -1177,7 +1227,8 @@ void await_notification_response(std::string device_identifier, AwaitNotificatio
 	PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(connection == nullptr, invalid_connection_error_message.c_str(), device_identifier, method_id);
 	
 	ServiceInfo currentNotificationProxy = devices[device_identifier].services[kNotificationProxy];
-	std::map<std::string, boost::any> response = receive_con_message(connection, device_identifier, method_id, await_notification_response_info.timeout);
+	ConnectionMessageData connectionMessageData = { connection, device_identifier, method_id, kNotificationProxy, await_notification_response_info.timeout };
+	std::map<std::string, boost::any> response = receive_con_message(connectionMessageData);
 	if (response.size())
 	{
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(response.count(kErrorKey), boost::any_cast<std::string>(response[kErrorKey]).c_str(), device_identifier, method_id);

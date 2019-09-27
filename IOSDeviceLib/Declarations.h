@@ -105,6 +105,15 @@ struct ServiceInfo {
 	HANDLE socket;
 	ServiceConnRef connection;
 	int connection_id;
+    std::string service_name;
+};
+
+struct ConnectionMessageData {
+    ServiceConnRef conn;
+    std::string device_identifier;
+    std::string method_id;
+    std::string service_name;
+    int timeout;
 };
 
 struct DeviceData {
@@ -268,7 +277,7 @@ extern HINSTANCE mobile_device_dll;
 
 extern "C"
 {
-	CFSocketNativeHandle  AMDServiceConnectionGetSocket(ServiceConnRef con);
+	CFSocketNativeHandle AMDServiceConnectionGetSocket(ServiceConnRef con);
 	long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
 	void AMDServiceConnectionInvalidate(ServiceConnRef);
 	long AMDServiceConnectionSendMessage(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
