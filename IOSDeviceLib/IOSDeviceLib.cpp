@@ -1257,6 +1257,7 @@ void stop_app(std::string device_identifier, std::string application_identifier,
 		HANDLE gdb = start_debug_server(device_identifier, ddi, method_id);
 		if (!gdb)
 		{
+			print_error("Unable to start gdb server", device_identifier, method_id, kUnexpectedError);
 			return;
 		}
 
