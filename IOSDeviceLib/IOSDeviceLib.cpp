@@ -240,6 +240,7 @@ void get_device_properties(std::string device_identifier, json &result)
 	result["deviceName"] = get_device_property_value(device_identifier, "DeviceName");
 	result["productVersion"] = get_device_property_value(device_identifier, kProductVersion);
 	result["deviceColor"] = get_device_property_value(device_identifier, "DeviceColor");
+	result["deviceClass"] = get_device_property_value(device_identifier, "DeviceClass");
 	//    available values:
 	//    "BluetoothAddress","BoardId","CPUArchitecture","ChipID","DeviceClass",
 	//    "DeviceColor","DeviceName","FirmwareVersion","HardwareModel",
@@ -286,13 +287,17 @@ void on_device_found(const DevicePointer* device_ptr, std::string device_identif
 		}
 		
 		update_device_result(device_identifier, result);
+		if (result["deviceClass"] == "AppleTV") {
+			// We do not support AppleTV devices
+			result = nullptr;
+		}
 	}
 }
 
 void device_notification_callback(const DevicePointer* device_ptr)
 {
 	std::string device_identifier = get_cstring_from_cfstring(AMDeviceCopyDeviceIdentifier(device_ptr->device_info));
-	json result;
+	json result = nullptr;
 	result[kDeviceId] = device_identifier;
 	switch (device_ptr->msg)
 	{
@@ -339,7 +344,9 @@ void device_notification_callback(const DevicePointer* device_ptr)
 		}
 	}
 
-	print(result);
+	if (result != nullptr) {
+		print(result);
+	}
 }
 
 #ifdef _WIN32
