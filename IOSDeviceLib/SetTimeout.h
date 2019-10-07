@@ -36,5 +36,5 @@ struct TimeoutOutputData {
     TimeoutData* timeoutData;
 };
 
-TimeoutOutputData setTimeout(int timeout, void * data, void(*operation)(void*));
-void clearTimeout(TimeoutOutputData data);
+TimeoutOutputData* setTimeout(int timeout, void * data, void(*operation)(void*));
+void clearTimeout(TimeoutOutputData* data);
