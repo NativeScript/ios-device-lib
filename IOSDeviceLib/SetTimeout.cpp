@@ -8,12 +8,11 @@ DWORD WINAPI TimeoutThreadExecutor(LPVOID lpParam) {
 	TimeoutData* threadData = (TimeoutData*)lpParam;
 	std::this_thread::sleep_for(std::chrono::milliseconds(threadData->timeout * 1000));
 	threadData->operation(threadData->data);
-	free(threadData);
 	return 0;
 }
 #endif
 
-TimeoutOutputData setTimeout(int timeout, void * data, void(*operation)(void*)) {
+TimeoutOutputData* setTimeout(int timeout, void * data, void(*operation)(void*)) {
 	std::thread::native_handle_type darwinHandle = nullptr;
 	HANDLE windowsHandle = nullptr;
 	struct TimeoutData* timeoutData = nullptr;
@@ -43,18 +42,23 @@ TimeoutOutputData setTimeout(int timeout, void * data, void(*operation)(void*)) 
 #endif
 	}
 
-	return { darwinHandle, windowsHandle, timeoutData };
+	TimeoutOutputData* result = reinterpret_cast<TimeoutOutputData*>(malloc(sizeof(struct TimeoutOutputData)));
+	result->windowsHandle = windowsHandle;
+	result->darwinHandle = darwinHandle;
+	result->timeoutData = timeoutData;
+
+	return result;
 }
 
-void clearTimeout(TimeoutOutputData data) {
-	if (data.timeoutData) {
-		free(data.timeoutData);
-		data.timeoutData = nullptr;
+void clearTimeout(TimeoutOutputData* data) {
+	if (data->timeoutData) {
+		free(data->timeoutData);
+		data->timeoutData = nullptr;
 	}
 	
 #ifdef WIN32
-	if (data.windowsHandle) {
-		int terminateThreadResult = TerminateThread(data.windowsHandle, 9);
+	if (data->windowsHandle) {
+		int terminateThreadResult = TerminateThread(data->windowsHandle, 9);
 		// https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-terminatethread#return-value
 		if (terminateThreadResult == 0)
 		{
@@ -62,8 +66,11 @@ void clearTimeout(TimeoutOutputData data) {
 		}
 	}
 #else
-	if (data.darwinHandle) {
-		pthread_cancel(data.darwinHandle);
+	if (data->darwinHandle) {
+		pthread_cancel(data->darwinHandle);
 	}
 #endif
+
+	free(data);
+	data = nullptr;
 }

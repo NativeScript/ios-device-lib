@@ -659,7 +659,7 @@ std::map<std::string, boost::any> receive_con_message(ConnectionMessageData data
 	receive_con_message_mutex.lock();
 	
 	ServiceConnRef conn = data.conn;
-	TimeoutOutputData timeoutOutputData = setTimeout(data.timeout, &data, clean_con_resources);
+	TimeoutOutputData* timeoutOutputData = setTimeout(data.timeout, &data, clean_con_resources);
 
 	std::map<std::string, boost::any> dict;
 	char *buffer = new char[4];
@@ -673,12 +673,10 @@ std::map<std::string, boost::any> receive_con_message(ConnectionMessageData data
 		if (bytes_read > 0)
 		{
 			Plist::readPlist(buffer, res, dict);
-			clearTimeout(timeoutOutputData);
 		}
-	} else {
-		clearTimeout(timeoutOutputData);
 	}
 
+	clearTimeout(timeoutOutputData);
 	delete[] buffer;
 	receive_con_message_mutex.unlock();
 	return dict;
@@ -1052,7 +1050,7 @@ void get_application_infos(std::string device_identifier, std::string method_id)
 	std::vector<json> livesync_app_infos;
 	while (true)
 	{
-		ConnectionMessageData connectionMessageData = { serviceInfo.connection, device_identifier, method_id, kInstallationProxy, 10 };
+		ConnectionMessageData connectionMessageData = { serviceInfo.connection, device_identifier, method_id, kInstallationProxy, 0 };
 		std::map<std::string, boost::any> dict = receive_con_message(connectionMessageData);
 		PRINT_ERROR_AND_RETURN_IF_FAILED_RESULT(dict.count(kErrorKey), boost::any_cast<std::string>(dict[kErrorKey]).c_str(), device_identifier, method_id);
 		if (dict.empty() || (dict.count(kStatusKey) && has_complete_status(dict)))
