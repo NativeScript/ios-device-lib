@@ -35,6 +35,25 @@ Building
 ==
 The `ios-device-lib` package can be built on either Windows (requires Visual Studio) or macOS (requires Xcode). In order to build the application one should simply open the `.sln` or `.xcodeproj` file with the respective tool and click build. Whenever building in **release** configuration, the result binary will end up in `bin/<platform-name>/<architecture>`, relative to the root of this repository. For example `bin/win32/x64/` or `bin/darwin/x64/`. The JavaScript counterpart of the C++ code expects the binaries to be present in those exact locations, so one would have to build at least once prior to using the application.
 
+Releasing
+==
+When you want to release a new version, you should build the binaries for macOS and Windows. To do this, please follow the steps below:
+1. On Windows machine, open IOSDeviceLib.sln file with Visual Studio.
+2. Select Release configuration and x64 architecture.
+3. Build the application.
+4. Now switch the architecture to x86.
+5. Build the application again.
+6. After that open the `<repo dir>\bin\win32` - you will find two dirs there - `ia32` and `x64`.
+7. Open both of the directories and delete all files except the `ios-device-lib.exe` file.
+8. Copy the win32 dir to your Mac machine.
+9. Open the repository on macOS
+10. With Xcode open the `IOSDeviceLib.xcodeproj`
+11. Build the product in Release mode (Cmd + Shift + B on my side).
+12. Open the `<repo dir>/bin/darwin` directory and check if you have `x64` dir there with a single binary file in it.
+13. Inside `<repo dir>/bin/` put the `win32` directory that you've copied from your Windows machine.
+14. At the root of the repository execute `npm pack` - this will produce a new .tgz file.
+15. Publish the `.tgz` file in `npm`.
+
 Inter-process Communication
 ==
 This application consists of two separate layers - one `C++` and one `Node.js`. The `C++` layer implements the application's business logic, whereas the `Node.js` layer exists simply for alleviation. Whenever the `Node.js` part is used, it launches the `C++` binary and initiates communication with it. This communication consists of requests **to the binary** via the `stdin` pipe and responses **from the binary** via the `stdout` pipe. Currently the `stderr` pipe is only used for debugging purposes.
