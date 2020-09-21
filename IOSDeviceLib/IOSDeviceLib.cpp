@@ -502,6 +502,7 @@ AFCConnectionRef start_house_arrest(std::string device_identifier, const char* a
 
 HANDLE start_debug_server(std::string device_identifier, std::string ddi, std::string method_id)
 {
+  devices[device_identifier].debug_service_name = kDebugServer;
 	ServiceInfo info = start_secure_service(device_identifier, kDebugServer, method_id, false, false);
 	// mount_image is not available on Windows
 #ifndef _WIN32
@@ -510,6 +511,17 @@ HANDLE start_debug_server(std::string device_identifier, std::string ddi, std::s
 		info = start_secure_service(device_identifier, kDebugServer, method_id, true, false);
 	}
 #endif
+  if (!info.socket) {
+    devices[device_identifier].debug_service_name = kLegacyDebugServer;
+    info = start_secure_service(device_identifier, kLegacyDebugServer, method_id, false, false);
+    // mount_image is not available on Windows
+#ifndef _WIN32
+    if (!info.socket && mount_image(device_identifier, ddi, method_id))
+    {
+      info = start_secure_service(device_identifier, kLegacyDebugServer, method_id, true, false);
+    }
+#endif
+  }
 
 	return info.socket;
 }

@@ -136,7 +136,7 @@ void detach_connection(SOCKET socket, std::string& application_identifier, Devic
 	gdb_send_message("D", socket);
 	std::string answer = receive_message_raw(socket);
 	device_data->apps_cache[application_identifier].has_initialized_gdb = false;
-	device_data->services.erase(kDebugServer);
+	device_data->services.erase(device_data->debug_service_name);
 #ifdef _WIN32
 	closesocket(socket);
 #else

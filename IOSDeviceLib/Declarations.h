@@ -119,6 +119,7 @@ struct ConnectionMessageData {
 struct DeviceData {
 	DeviceInfo* device_info;
 	struct DeviceServerData* device_server_data;
+  const char* debug_service_name;
 	std::map<const char*, ServiceInfo> services;
 	int sessions;
 	std::map<std::string, ApplicationCache> apps_cache;

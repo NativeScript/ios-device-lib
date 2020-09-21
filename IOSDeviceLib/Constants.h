@@ -34,7 +34,8 @@ static const char *kHouseArrest = "com.apple.mobile.house_arrest";
 static const char *kNotificationProxy = "com.apple.mobile.notification_proxy";
 static const char *kSyslog = "com.apple.syslog_relay";
 static const char *kMobileImageMounter = "com.apple.mobile.mobile_image_mounter";
-static const char *kDebugServer = "com.apple.debugserver";
+static const char *kLegacyDebugServer = "com.apple.debugserver";
+static const char *kDebugServer = "com.apple.debugserver.DVTSecureSocketProxy";
 
 static const char *kUnreachableStatus = "Unreachable";
 static const char *kConnectedStatus = "Connected";
