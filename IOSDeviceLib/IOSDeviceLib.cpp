@@ -8,6 +8,7 @@
 #include <memory>
 #include <algorithm>
 #include <sys/stat.h>
+#include <dlfcn.h>
 
 #include "json.hpp"
 #include "PlistCpp/Plist.hpp"
@@ -56,6 +57,8 @@ device_lookup_applications __AMDeviceLookupApplications;
 usb_mux_connect_by_port __USBMuxConnectByPort;
 device_connection_operation __AMDeviceGetConnectionID;
 device_connection_operation __AMDeviceGetInterfaceType;
+
+ssl_free_void_void __SSL_free;
 
 cfstring_get_c_string_ptr __CFStringGetCStringPtr;
 cfstring_get_c_string __CFStringGetCString;
@@ -408,6 +411,24 @@ void start_run_loop()
 	CFRunLoopRun();
 }
 
+void disable_ssl_for_connection(ServiceConnRef connection)
+{
+
+#ifndef _WIN32
+    static void  (*SSL_free)(void *);
+    if (!SSL_free)
+    {
+        SSL_free = (void (*)(void *))dlsym(RTLD_DEFAULT, "SSL_free");
+    }
+#endif
+
+    if (connection->sslContext != NULL) {
+        SSL_free(connection->sslContext);
+        connection->sslContext = NULL;
+    }
+
+}
+
 std::mutex start_service_mutex;
 
 ServiceInfo start_secure_service(std::string device_identifier, const char* service_name, std::string method_id, bool should_log_error, bool skip_cache)
@@ -423,6 +444,9 @@ ServiceInfo start_secure_service(std::string device_identifier, const char* serv
 		return serviceInfoResult;
 	}
 
+	// Track the Debug Service Name
+	devices[device_identifier].debugServiceName = (char *)service_name;
+
 	if (!skip_cache && devices[device_identifier].services.count(service_name))
 	{
 		start_service_mutex.unlock();
@@ -434,8 +458,15 @@ ServiceInfo start_secure_service(std::string device_identifier, const char* serv
 	
 	ServiceConnRef connection;
 	unsigned result = AMDeviceSecureStartService(devices[device_identifier].device_info, cf_service_name, NULL, &connection);
-	service_conn_t socket = (void*)AMDServiceConnectionGetSocket(connection);
-	 
+
+	if (connection && service_name && strcmp(service_name, kDebugServer) == 0) {
+    	    // We have to disable SSL on old service name
+    	    disable_ssl_for_connection(connection);
+    }
+
+	HANDLE socket = (void *)AMDServiceConnectionGetSocket(connection);
+
+
 	stop_session(device_identifier);
 	CFRelease(cf_service_name);
 	if (result)
@@ -448,7 +479,8 @@ ServiceInfo start_secure_service(std::string device_identifier, const char* serv
 		start_service_mutex.unlock();
 		return serviceInfoResult;
 	}
-	
+
+
 	serviceInfoResult.socket = socket;
 	serviceInfoResult.connection = connection;
 	serviceInfoResult.connection_id = nextServiceConnectionId;
@@ -502,14 +534,30 @@ AFCConnectionRef start_house_arrest(std::string device_identifier, const char* a
 
 HANDLE start_debug_server(std::string device_identifier, std::string ddi, std::string method_id)
 {
-	ServiceInfo info = start_secure_service(device_identifier, kDebugServer, method_id, false, false);
+
+    // Try New Service
+	ServiceInfo info = start_secure_service(device_identifier, kNewDebugServer, method_id, false, false);
+
+	#ifndef _WIN32
 	// mount_image is not available on Windows
-#ifndef _WIN32
+   	if (!info.socket && mount_image(device_identifier, ddi, method_id))
+   	{
+    		info = start_secure_service(device_identifier, kNewDebugServer, method_id, false, false);
+   	}
+    #endif
+
+   //  Try Old service
+	if (!info.socket) {
+	     info = start_secure_service(device_identifier, kDebugServer, method_id, false, false);
+	}
+
+	// TODO: We might not need to remount image, image might be being dismounted somehow in start_secure_image, so...
+    #ifndef _WIN32
 	if (!info.socket && mount_image(device_identifier, ddi, method_id))
 	{
 		info = start_secure_service(device_identifier, kDebugServer, method_id, true, false);
 	}
-#endif
+    #endif
 
 	return info.socket;
 }
