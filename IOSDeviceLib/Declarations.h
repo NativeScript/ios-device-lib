@@ -95,24 +95,11 @@ struct afc_file {
 
 struct ApplicationCache {
 	AFCConnectionRef afc_connection;
-	bool has_initialized_gdb;
 };
 
-typedef struct {
-    char unknown0[16];
-    int sock;
-    void *sslContext;
-} service_conn_t;
+#include "ServiceInfo.h"
 
-
-typedef service_conn_t * ServiceConnRef;
 typedef struct DeviceInfo * AMDeviceRef;
-struct ServiceInfo {
-	HANDLE socket;
-	ServiceConnRef connection;
-	int connection_id;
-    std::string service_name;
-};
 
 struct ConnectionMessageData {
     ServiceConnRef conn;
