@@ -7,15 +7,30 @@
 #include "PlistCpp/Plist.hpp"
 #include "PlistCpp/PlistDate.hpp"
 
-int send_message(const char* message, SOCKET socket, long long length)
+#include "json.hpp"
+#include "Printing.h"
+#include "StringHelper.h"
+using json = nlohmann::json;
+
+#define DEBUG_PACKETS 0
+
+int send_message(const char* message, ServiceInfo info, long long length)
 {
+	if (DEBUG_PACKETS) {
+		print(json({{"send_message", message}}));
+		print("\n");
+	}
+
 	LengthEncodedMessage length_encoded_message = get_message_with_encoded_length(message, length);
-	return send(socket, length_encoded_message.message, length_encoded_message.length, 0);
+  
+  std::string encmsg(length_encoded_message.message, length_encoded_message.length);
+  
+  return AMDServiceConnectionSend(info.connection, length_encoded_message.message, length_encoded_message.length);
 }
 
-int send_message(std::string message, SOCKET socket, long long length)
+int send_message(std::string message, ServiceInfo info, long long length)
 {
-	return send_message(message.c_str(), socket, length);
+	return send_message(message.c_str(), info, length);
 }
 
 int get_socket_state(SOCKET socket, int timeout)
@@ -174,23 +189,43 @@ void proxy_socket_io(SOCKET first, SOCKET second, SocketClosedCallback first_soc
 	}).detach();
 }
 
-std::string receive_message_raw(SOCKET socket, int size)
+std::string receive_message_raw_inner(ServiceInfo info, int size)
 {
+	int total_read = 0;
 	int bytes_read;
 	std::string result = "";
-	if (get_socket_state(socket, 1) == kSocketHasMessages)
+	if (get_socket_state((SOCKET)info.socket, 1) == kSocketHasMessages)
 	{
 		do
 		{
-			char *buffer = new char[size];
-			bytes_read = recv(socket, buffer, size, 0);
+			char *buffer = (char *) malloc(size + 1);
+			bytes_read = AMDServiceConnectionReceive(info.connection, buffer, size);
 			if (bytes_read > 0)
 				result += std::string(buffer, bytes_read);
-			delete[] buffer;
+			free(buffer);
+			total_read += bytes_read;
 		} while (bytes_read == size);
 	}
 
+	if (DEBUG_PACKETS) {
+		print(json({{"total_read", total_read, "receive_message_raw", result}}));
+		print("\n");
+	}
+
 	return result;
+}
+
+std::string receive_message_raw(ServiceInfo info, int size)
+{
+	do {
+		std::string result = receive_message_raw_inner(info, size);
+
+		if (result.length() < 10 || result.substr(result.length() - 3) != "#00") {
+			return result;
+		}
+	} while (true);
+
+	return "";
 }
 
 LengthEncodedMessage get_message_with_encoded_length(const char* message, long long length)
@@ -198,10 +233,10 @@ LengthEncodedMessage get_message_with_encoded_length(const char* message, long l
 	if (length < 0)
 		length = strlen(message);
 
-	unsigned long message_len = length + 4;
+  size_t packed_length_size = 4;
+	unsigned long message_len = length + packed_length_size;
 	char *length_encoded_message = new char[message_len];
 	unsigned long packed_length = htonl(length);
-	size_t packed_length_size = 4;
 	memcpy(length_encoded_message, &packed_length, packed_length_size);
 	memcpy(length_encoded_message + packed_length_size, message, length);
 	return{ length_encoded_message, message_len };

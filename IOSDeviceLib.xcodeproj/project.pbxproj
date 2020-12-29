@@ -37,6 +37,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2E98D5F7251CFDA100C833E5 /* ServiceInfo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ServiceInfo.h; sourceTree = "<group>"; };
+		2E98D5F9251CFE3B00C833E5 /* SocketIncludes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SocketIncludes.h; sourceTree = "<group>"; };
 		702495661E4080B8009A6EBF /* FileHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FileHelper.cpp; sourceTree = "<group>"; };
 		702495671E4080B8009A6EBF /* FileHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FileHelper.h; sourceTree = "<group>"; };
 		702495681E4080B8009A6EBF /* GDBHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GDBHelper.cpp; sourceTree = "<group>"; };
@@ -378,6 +380,8 @@
 				7038C9F31DEEDB4C00A3D335 /* json.hpp */,
 				7038C9F41DEEDB4C00A3D335 /* PlistCpp */,
 				7038CB401DEEF31400A3D335 /* Declarations.h */,
+				2E98D5F7251CFDA100C833E5 /* ServiceInfo.h */,
+				2E98D5F9251CFE3B00C833E5 /* SocketIncludes.h */,
 				E0F67C102325919600D3E0C2 /* SetTimeout.h */,
 				E0F67C11232591AE00D3E0C2 /* SetTimeout.cpp */,
 			);

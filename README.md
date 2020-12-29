@@ -83,6 +83,7 @@ Upon launching the binary it will report all devices currently attached in the f
 After that the binary is ready to accept requests via its standart input. Currently each passed message **must be on one line**, ending with a new line (Enter key) in order for it to be parsed correctly. Each message contains the **name** of the method, which you'd like to invoke, an **identification string** and the **method's arguments**. Messages are processed asynchronously, hence multiple messages can be passed at once. Example messages for the different opperations can be found below:
 
 ### List applications
+```
 {
   "methods": [
     {
@@ -95,8 +96,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Install application
+```
 {
   "methods": [
     {
@@ -112,8 +115,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Uninstall application
+```
 {
   "methods": [
     {
@@ -129,8 +134,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### List files in an application
+```
 {
   "methods": [
     {
@@ -146,8 +153,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Upload a file from the local file system to the device
+```
 {
   "methods": [
     {
@@ -164,8 +173,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Delete a file from the device
+```
 {
   "methods": [
     {
@@ -181,8 +192,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Retrieve the contents of a file from the device
+```
 {
   "methods": [
     {
@@ -198,8 +211,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Download a file from the device to the local system
+```
 {
   "methods": [
     {
@@ -216,8 +231,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Start printing the device log for a device
+```
 {
   "methods": [
     {
@@ -229,9 +246,11 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
-### Post a notification to a device. (As if ot was dispatched via NSNotificationCenter). This call is non-blocking.
+### Post a notification to a device. (As if it was dispatched via NSNotificationCenter). This call is non-blocking.
 #### Post
+```
 {
   "methods": [
     {
@@ -247,8 +266,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 #### Observe
+```
 {
   "methods": [
     {
@@ -264,8 +285,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Post a notification to a device and await its response. This call is blocking.
+```
 {
   "methods": [
     {
@@ -283,8 +306,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Start an application.
+```
 {
   "methods": [
     {
@@ -299,8 +324,10 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ### Stop a running application.
+```
 {
   "methods": [
     {
@@ -315,6 +342,7 @@ After that the binary is ready to accept requests via its standart input. Curren
     }
   ]
 }
+```
 
 ## JavaScript interface
 A detailed definition of all the methods can be found [here](https://github.com/telerik/ios-device-lib/blob/master/typings/interfaces.d.ts#L127)

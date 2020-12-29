@@ -95,18 +95,11 @@ struct afc_file {
 
 struct ApplicationCache {
 	AFCConnectionRef afc_connection;
-	bool has_initialized_gdb;
 };
 
-typedef HANDLE service_conn_t;
-typedef service_conn_t * ServiceConnRef;
+#include "ServiceInfo.h"
+
 typedef struct DeviceInfo * AMDeviceRef;
-struct ServiceInfo {
-	HANDLE socket;
-	ServiceConnRef connection;
-	int connection_id;
-    std::string service_name;
-};
 
 struct ConnectionMessageData {
     ServiceConnRef conn;
@@ -124,6 +117,7 @@ struct DeviceData {
 	std::map<std::string, ApplicationCache> apps_cache;
 	int isWiFiConnected;
 	int isUSBConnected;
+	char *debugServiceName;
 
 	void kill_device_server()
 	{
@@ -204,6 +198,8 @@ typedef unsigned(__cdecl *device_start_house_arrest)(const DeviceInfo*, CFString
 typedef unsigned(__cdecl *device_lookup_applications)(const DeviceInfo*, CFDictionaryRef, CFDictionaryRef*);
 typedef int(__cdecl *usb_mux_connect_by_port)(int, int, long long*);
 
+typedef void (__cdecl *ssl_free_void_void) (void *);
+
 #endif // _WIN32
 #pragma endregion Dll_Type_Definitions
 
@@ -236,6 +232,8 @@ extern HINSTANCE mobile_device_dll;
 #define AMDeviceSecureInstallApplication GET_IF_EXISTS(__AMDeviceSecureInstallApplication, device_secure_operation_with_path, mobile_device_dll, "AMDeviceSecureInstallApplication")
 #define AMDeviceStartHouseArrestService GET_IF_EXISTS(__AMDeviceStartHouseArrestService, device_start_house_arrest, mobile_device_dll, "AMDeviceStartHouseArrestService")
 #define AMDeviceLookupApplications GET_IF_EXISTS(__AMDeviceLookupApplications, device_lookup_applications, mobile_device_dll, "AMDeviceLookupApplications")
+
+#define SSL_free GET_IF_EXISTS(__SSL_free, ssl_free_void_void, mobile_device_dll, "SSL_free")
 
 #define AMDeviceGetConnectionID GET_IF_EXISTS(__AMDeviceGetConnectionID, device_connection_operation, mobile_device_dll, "AMDeviceGetConnectionID")
 #define AMDeviceGetInterfaceType GET_IF_EXISTS(__AMDeviceGetInterfaceType, device_connection_operation, mobile_device_dll, "AMDeviceGetInterfaceType")
@@ -280,6 +278,9 @@ extern "C"
 	CFSocketNativeHandle AMDServiceConnectionGetSocket(ServiceConnRef con);
 	long AMDServiceConnectionReceive(ServiceConnRef, void *, long);
 	void AMDServiceConnectionInvalidate(ServiceConnRef);
+	bool AMDeviceIsAtLeastVersionOnPlatform(AMDeviceRef device, CFDictionaryRef vars);
+	int AMDServiceConnectionSend(ServiceConnRef con, const void * data, size_t size);
+
 	long AMDServiceConnectionSendMessage(ServiceConnRef serviceConnection, CFDictionaryRef message, CFPropertyListFormat format);
 	unsigned AMDeviceSecureStartService(AMDeviceRef device, CFStringRef service_name, unsigned int *unknown, ServiceConnRef * handle);
 	unsigned AMDeviceNotificationSubscribe(void(*f)(const DevicePointer*), long, long, long, HANDLE*);

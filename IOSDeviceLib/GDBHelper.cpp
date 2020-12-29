@@ -4,6 +4,10 @@
 #include <sstream>
 #include <iomanip>
 
+#include "Printing.h"
+#include "json.hpp"
+using json = nlohmann::json;
+
 const std::string kGDBErrorPrefix("$E");
 const std::string kGDBOk("$OK#");
 const int kRetryCount = 3;
@@ -23,32 +27,41 @@ std::string get_gdb_message(std::string message)
 
 #define RETURN_IF_FALSE(expr) ; if(!(expr)) { return false; }
 
-int gdb_send_message(std::string message, SOCKET socket, long long length)
+int gdb_send_message(std::string message, ServiceInfo info, long long length)
 {
-	return send_message(get_gdb_message(message), socket, length);
+	return send_message(get_gdb_message(message), info, length);
 }
 
-bool await_response(std::string message, SOCKET socket)
+bool await_response(std::string message, ServiceInfo info, bool require_ok = false)
 {
-	gdb_send_message(message, socket);
-	std::string answer = receive_message_raw(socket);
-	return !starts_with(answer, kGDBErrorPrefix);
+	do {
+		gdb_send_message(message, info);
+		std::string answer = receive_message_raw(info);
+		if (starts_with(answer, kGDBErrorPrefix)) {
+			return false;
+		}
+		if (!require_ok || starts_with(answer, kGDBOk)) {
+			break;
+		}
+
+		send_message("\x03", info);
+	} while (true);
+
+	return true;
 }
 
-bool init(std::string& executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache,  bool wait_for_debugger = false)
+bool init(std::string& executable, ServiceInfo info, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache,  bool wait_for_debugger = false)
 {
-	if (apps_cache[application_identifier].has_initialized_gdb)
-		return true;
-	// Noramlly GDB requires + or - acknowledgments after every message
+	// Normally GDB requires + or - acknowledgments after every message
 	// This however is only valuable if the communication channel is insecure (packets are lost - e.g. UDP)
 	// In our case this would only cause overhead so we disable it using QStartNoAckMode
-	RETURN_IF_FALSE(await_response("QStartNoAckMode", socket));
-	send_message("+", socket);
+	RETURN_IF_FALSE(await_response("QStartNoAckMode", info));
+	send_message("+", info);
 	// Set QEnvironmentHexEncoded because the arguments we pass around (e.g. path to executable) may contain non-printable characters
-	RETURN_IF_FALSE(await_response("QEnvironmentHexEncoded:", socket));
+	RETURN_IF_FALSE(await_response("QEnvironmentHexEncoded:", info));
 	// This actually means QSetDisableASLR:TRUE and actually disables Address space layout randomization on the next A request
 	// We need this because GDB isn't connected to any inferior process (e.g. the application we want to control)
-	RETURN_IF_FALSE(await_response("QSetDisableASLR:1", socket));
+	RETURN_IF_FALSE(await_response("QSetDisableASLR:1", info));
 	std::stringstream result;
 	std::string debugBrk = "--nativescript-debug-brk";
 	// Initializes the argv in the form of arglen,argnum,arg
@@ -60,19 +73,18 @@ bool init(std::string& executable, SOCKET socket, std::string& application_ident
 	if (wait_for_debugger) {
 		result << debugBrk.size() * 2 << ",1," << to_hex(debugBrk);
 	}
-	RETURN_IF_FALSE(await_response(result.str(), socket));
+	RETURN_IF_FALSE(await_response(result.str(), info));
 	// After all of this is done we can actually call a method with these arguments
-	apps_cache[application_identifier].has_initialized_gdb = true;
 	return true;
 }
 
-bool run_application(std::string& executable, SOCKET socket, std::string& application_identifier, DeviceData* device_data, bool wait_for_debugger)
+bool run_application(std::string& executable, ServiceInfo info, std::string& application_identifier, DeviceData* device_data, bool wait_for_debugger)
 {
-	RETURN_IF_FALSE(init(executable, socket, application_identifier, device_data->apps_cache, wait_for_debugger));
+	RETURN_IF_FALSE(init(executable, info, application_identifier, device_data->apps_cache, wait_for_debugger));
 	// Couldn't find official info on this but I'm guessing this is the method we need to call
-	RETURN_IF_FALSE(await_response("qLaunchSuccess", socket));
+	RETURN_IF_FALSE(await_response("qLaunchSuccess", info));
 	// vCont specifies a command to be run - c means continue
-	gdb_send_message("vCont;c", socket);
+	await_response("vCont;c", info);
 	// The answer is HEX encoded and looks somewhat like this when translated:
 	/*
 		KSCrash: App is running in a debugger. The following crash types have been disabled:
@@ -84,62 +96,33 @@ bool run_application(std::string& executable, SOCKET socket, std::string& applic
 	*/
 	// We have decided we do not need this at the moment, but it is vital that it be read from the pipe
 	// Else it will remain there and may be read later on and mistaken for a response to same other package
-	std::string answer = receive_message_raw(socket);
-	
-	detach_connection(socket, application_identifier, device_data);
-	
+
+	await_response("D", info, true);
+	detach_connection(info, device_data);
+
 	return true;
 }
 
-bool stop_application(std::string & executable, SOCKET socket, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache)
+bool stop_application(std::string & executable, ServiceInfo info, std::string& application_identifier, std::map<std::string, ApplicationCache>& apps_cache)
 {
-	RETURN_IF_FALSE(init(executable, socket, application_identifier, apps_cache));
-	// If we just send kill here it doesn't work
-	// I believe it is due to some racing condition because when I send kill I sometimes receive an error and sometimes - nothing
-	
-	std::string answer;
-	bool can_send_kill = false;
-	for (size_t _ = 0; _ < kRetryCount; _++)
-	{
-		// The code that follows is translated from the AppBuilder CLI
-		// I am not really sure what's going on here but I'll share what I know
-		// The 3rd character of the ASCII table is ETX - end ot text.
-		// After we send it we either get an error or some information about a thread - I presume the currently running thread
-		send_message("\x03", socket);
-		answer = receive_message_raw(socket);
-		// If we get infromation about the thread then apparently it is now safe to send the kill command
-		// Thread information contains data that I cannot decipher - looks like this:
-		// $T11thread:42202;00:0540001000000000;01:0608000700000000;02:0000000000000000;03:000c000000000000;04:0321000000000000;05:ffffffff00000000;06:0000000000000000;07:0100000000000000;08:bffbffff00000000;09:0000000700000000;0a:0001000700000000;0b:c0bdf0ff00000000;0c:034e0d00004d0d00;0d:0000000000000000;0e:004e0d00004e0d00;0f:0000000000000000;10:e1ffffffffffffff;11:20a59e8201000000;12:0000000000000000;13:0000000000000000;14:ffffffff00000000;15:0321000000000000;16:000c000000000000;17:08a0d66f01000000;18:0608000700000000;19:0000000000000000;1a:0608000700000000;1b:000c000000000000;1c:0100000000000000;1d:009fd66f01000000;1e:dcffab8101000000;1f:b09ed66f01000000;20:6c01ac8101000000;21:00000060;metype:5;mecount:2;medata:10003;medata:11;memory:0x16fd69f00=609fd66f01000000ecdcab8201000000;memory:0x16fd69f60=70acd66f0100000008b9ab8201000000;#00
-		// If the application is not running the gdb will return $OK#00 instead of the above message.
-		if (contains(answer, "thread") || contains(answer, "$OK#"))
-		{
-			can_send_kill = true;
-			break;
-		}
-	}
+	RETURN_IF_FALSE(init(executable, info, application_identifier, apps_cache));
 
-	if (!can_send_kill)
-		return false;
-
+	receive_message_raw(info);
 	// Kill request
-	gdb_send_message("k", socket);
-	// The answer is HEX encoded and looks somewhat like this when translated:
-	// Terminated due to signal 9
-	// We have decided we do not need this at the moment, but it is vital that it be read from the pipe
-	// Else it will remain there and may be read later on and mistaken for a response to same other package
-	answer = receive_message_raw(socket);
+	await_response("\x03", info);
+	await_response("k", info);
 	return true;
 }
 
-void detach_connection(SOCKET socket, std::string& application_identifier, DeviceData* device_data)
+void detach_connection(ServiceInfo info, DeviceData* device_data)
 {
-	gdb_send_message("D", socket);
-	std::string answer = receive_message_raw(socket);
-	device_data->apps_cache[application_identifier].has_initialized_gdb = false;
-	device_data->services.erase(kDebugServer);
+	await_response("D", info);
+	receive_message_raw(info);
+	AMDServiceConnectionInvalidate(info.connection);
+	device_data->services.erase(info.service_name);
 #ifdef _WIN32
-	closesocket(socket);
+	closesocket(info.socket);
 #else
-	close(socket);
+	close((SOCKET)info.socket);
 #endif
 }
