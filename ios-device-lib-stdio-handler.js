@@ -14,8 +14,22 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 		this._showDebugInformation = options.debug;
 	}
 
+	getBinaryPath() {
+		if(os.platform() === "darwin") {
+			// on mac ios-device-lib is a universal binary (x86_64 & arm64)
+			return path.resolve(__dirname, "bin/darwin/ios-device-lib")
+		}
+
+		if (os.platform() === "win32" || os.platform() === "win64") {
+			return path.resolve(__dirname,`bin/win32/${os.arch()}ios-device-lib`)
+		}
+	}
+
 	startReadingData() {
-		this._chProc = spawn(path.join(__dirname, "bin", os.platform(), os.arch(), "ios-device-lib").replace("app.asar", "app.asar.unpacked"));
+		this._chProc = spawn(
+			// replace app.asar to allow spawning from electron
+			this.getBinaryPath().replace("app.asar", "app.asar.unpacked")
+		);
 
 		const stdinMessageUnpackStream = new MessageUnpackStream();
 		this._chProc.stdout.pipe(stdinMessageUnpackStream);
