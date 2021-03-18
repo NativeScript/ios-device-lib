@@ -26,16 +26,25 @@ static const unsigned kAMDAPIInternalError = 0xe8000067;
 static const int kUSBInterfaceType = 1;
 static const int kWIFIInterfaceType = 2;
 static const unsigned kAppleServiceNotStartedErrorCode = 0xE8000063;
-static const unsigned kMountImageAlreadyMounted = 0xE8000076; // Note: This error code is actually named kAMDMobileImageMounterImageMountFailed but AppBuilder CLI and other sources think that getting this exit code during a mount is okay
-static const unsigned kIncompatibleSignature = 0xE8000033; // Note: This error code is actually named kAMDInvalidDiskImageError but CLI and other sources think that getting this exit code during a mount is okay
+static const unsigned kMountImageAlreadyMounted =
+    0xE8000076; // Note: This error code is actually named
+                // kAMDMobileImageMounterImageMountFailed but AppBuilder CLI and
+                // other sources think that getting this exit code during a
+                // mount is okay
+static const unsigned kIncompatibleSignature =
+    0xE8000033; // Note: This error code is actually named
+                // kAMDInvalidDiskImageError but CLI and other sources think
+                // that getting this exit code during a mount is okay
 static const char *kAppleFileConnection = "com.apple.afc";
 static const char *kInstallationProxy = "com.apple.mobile.installation_proxy";
 static const char *kHouseArrest = "com.apple.mobile.house_arrest";
 static const char *kNotificationProxy = "com.apple.mobile.notification_proxy";
 static const char *kSyslog = "com.apple.syslog_relay";
-static const char *kMobileImageMounter = "com.apple.mobile.mobile_image_mounter";
+static const char *kMobileImageMounter =
+    "com.apple.mobile.mobile_image_mounter";
 static const char *kDebugServer = "com.apple.debugserver";
-static const char *kNewDebugServer = "com.apple.debugserver.DVTSecureSocketProxy";
+static const char *kNewDebugServer =
+    "com.apple.debugserver.DVTSecureSocketProxy";
 
 static const char *kUnreachableStatus = "Unreachable";
 static const char *kConnectedStatus = "Connected";

@@ -3,26 +3,30 @@
 #include <Windows.h>
 #endif
 
+#include "Constants.h"
 #include "json.hpp"
 #include <string>
-#include "Constants.h"
 
-void trace(const char* str);
+void trace(const char *str);
 void trace(int num);
-void print(const char* str);
-void print(const nlohmann::json& message);
-void print_error(const char *message, std::string device_identifier, std::string method_id, int code =
+void print(const char *str);
+void print(const nlohmann::json &message);
+void print_error(const char *message, std::string device_identifier,
+                 std::string method_id,
+                 int code =
 #ifdef _WIN32
-	GetLastError()
+                     GetLastError()
 #else
-	kAMDNotFoundError
+                     kAMDNotFoundError
 #endif
 );
 
-void print_errors(std::vector<std::string>& messages, std::string device_identifier, std::string method_id, int code =
+void print_errors(std::vector<std::string> &messages,
+                  std::string device_identifier, std::string method_id,
+                  int code =
 #ifdef _WIN32
-	GetLastError()
+                      GetLastError()
 #else
-	kAMDNotFoundError
+                      kAMDNotFoundError
 #endif
 );
