@@ -1,9 +1,14 @@
 {
   "name": "ios-device-lib",
-  "version": "0.9.0-alpha.0",
+  "version": "0.9.0",
   "description": "",
   "types": "./typings/ios-device-lib.d.ts",
   "main": "index.js",
+  "files": [
+    "bin",
+    "typings",
+    "*.js"
+  ],
   "scripts": {
     "prepack": "npm test",
     "mocha": "mocha",
