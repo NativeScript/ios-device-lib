@@ -3,12 +3,12 @@
 #include "SocketIncludes.h"
 
 typedef struct {
-    char unknown0[16];
-    int sock;
-    void *sslContext;
+  char unknown0[16];
+  int sock;
+  void *sslContext;
 } service_conn_t;
 
-typedef service_conn_t * ServiceConnRef;
+typedef service_conn_t *ServiceConnRef;
 struct ServiceInfo {
   HANDLE socket;
   ServiceConnRef connection;

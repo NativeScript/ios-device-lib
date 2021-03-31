@@ -1,13 +1,14 @@
 {
   "name": "ios-device-lib",
-  "version": "0.8.0",
+  "version": "0.9.0-alpha.0",
   "description": "",
   "types": "./typings/ios-device-lib.d.ts",
   "main": "index.js",
   "scripts": {
     "prepack": "npm test",
     "mocha": "mocha",
-    "test": "istanbul cover ./node_modules/mocha/bin/_mocha"
+    "test": "istanbul cover ./node_modules/mocha/bin/_mocha",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
@@ -25,7 +26,12 @@
   },
   "devDependencies": {
     "chai": "4.2.0",
+    "husky": "^5.1.3",
     "istanbul": "0.4.5",
+    "lint-staged": "^10.5.4",
     "mocha": "5.2.0"
+  },
+  "lint-staged": {
+    "*.{cpp,h}": "clang-format -style=llvm -i"
   }
 }
