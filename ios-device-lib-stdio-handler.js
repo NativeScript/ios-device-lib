@@ -21,7 +21,7 @@ class IOSDeviceLibStdioHandler extends EventEmitter {
 		}
 
 		if (os.platform() === "win32" || os.platform() === "win64") {
-			return path.resolve(__dirname,`bin/win32/${os.arch()}ios-device-lib`)
+			return path.resolve(__dirname,`bin/win32/${os.arch()}/ios-device-lib`)
 		}
 	}
 
