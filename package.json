@@ -27,7 +27,7 @@
   "homepage": "https://github.com/telerik/ios-device-lib#readme",
   "dependencies": {
     "bufferpack": "0.0.6",
-    "node-uuid": "1.4.7"
+    "uuid": "8.3.2"
   },
   "devDependencies": {
     "chai": "4.2.0",

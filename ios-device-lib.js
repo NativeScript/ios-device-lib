@@ -1,4 +1,4 @@
-const uuid = require('node-uuid');
+const { v4: uuidv4 } = require('uuid');
 const EventEmitter = require("events");
 
 const Constants = require("./constants");
@@ -107,7 +107,7 @@ class IOSDeviceLib extends EventEmitter {
 			let timer = null;
 			let eventHandler = null;
 			let deviceLostHandler = null;
-			const id = uuid.v4();
+			const id = uuidv4();
 			const removeListeners = () => {
 				if (eventHandler) {
 					this._iosDeviceLibStdioHandler.removeListener(Constants.DataEventName, eventHandler);
