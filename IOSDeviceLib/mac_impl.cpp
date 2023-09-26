@@ -7,6 +7,7 @@
 #include <array>
 #include <map>
 
+
 extern std::map<std::string, DeviceData> devices;
 
 std::string exec(const char *cmd) {
@@ -23,6 +24,15 @@ std::string exec(const char *cmd) {
 
   return result;
 }
+
+int get_product_version(std::string &device_identifier){
+    std::string product_version =
+        get_device_property_value(device_identifier, kProductVersion);
+    std::vector<std::string> product_version_parts = split(product_version, '.');
+    std::string product_major_version = product_version_parts[0];
+    return std::stoi(product_version);
+}
+
 
 std::string
 get_developer_disk_image_directory_path(std::string &device_identifier) {

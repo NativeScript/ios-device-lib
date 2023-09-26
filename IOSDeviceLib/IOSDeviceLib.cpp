@@ -11,6 +11,8 @@
 #include <thread>
 
 #include "CommonFunctions.h"
+#include "DevicectlHelper.h"
+
 #include "Constants.h"
 #include "Declarations.h"
 #include "FileHelper.h"
@@ -530,6 +532,7 @@ ServiceInfo start_debug_server(std::string device_identifier, std::string ddi,
                                           method_id, false, false);
 
 #ifndef _WIN32
+
   // mount_image is not available on Windows
   if (!info.socket && mount_image(device_identifier, ddi, method_id)) {
     info = start_secure_service(device_identifier, kNewDebugServer, method_id,
@@ -1434,37 +1437,53 @@ void stop_app(std::string device_identifier, std::string application_identifier,
   }
 
   std::map<std::string, std::map<std::string, std::string>> map;
-  if (get_all_apps(device_identifier, map)) {
-    if (map.count(application_identifier) == 0) {
-      print_error("Application not installed", device_identifier, method_id,
-                  kApplicationsCustomError);
-      return;
+    if (get_all_apps(device_identifier, map)) {
+        if (map.count(application_identifier) == 0) {
+            print_error("Application not installed", device_identifier, method_id,
+                        kApplicationsCustomError);
+            return;
+        }
+        if(get_product_version(device_identifier) < 17){
+            long service_count = devices[device_identifier].services.size();
+            ServiceInfo gdb = start_debug_server(device_identifier, ddi, method_id);
+            if (!gdb.socket) {
+                print_error("Unable to start gdb server", device_identifier, method_id,
+                            kUnexpectedError);
+                return;
+            }
+            
+            std::string executable = map[application_identifier][kPathPascalCase];
+            if (devices[device_identifier].services.size() == service_count ||
+                stop_application(executable, gdb, application_identifier,
+                                 devices[device_identifier].apps_cache))
+                print(json({{kResponse, "Successfully stopped application"},
+                    {kId, method_id},
+                    {kDeviceId, device_identifier}}));
+            else
+                print_error("Could not stop application", device_identifier, method_id,
+                            kApplicationsCustomError);
+            
+            detach_connection(gdb, &devices[device_identifier]);
+        } else {
+            
+            std::string executable = map[application_identifier][kPathPascalCase];
+            std::string CFBundleExecutableString =map[application_identifier]["CFBundleExecutable"];
+            
+            std::string fullPidPath =executable + "/" + CFBundleExecutableString;
+            if(devicectl_stop_application(fullPidPath, device_identifier)){
+                
+                print(json({{kResponse, "Successfully stopped application"},
+                    {kId, method_id},
+                    {kDeviceId, device_identifier}}));
+            } else {
+                print_error("Could not stop application", device_identifier, method_id,
+                            kApplicationsCustomError);
+            }
+        }
+    } else {
+        print_error("Lookup applications failed", device_identifier, method_id,
+                    kApplicationsCustomError);
     }
-
-    long service_count = devices[device_identifier].services.size();
-    ServiceInfo gdb = start_debug_server(device_identifier, ddi, method_id);
-    if (!gdb.socket) {
-      print_error("Unable to start gdb server", device_identifier, method_id,
-                  kUnexpectedError);
-      return;
-    }
-
-    std::string executable = map[application_identifier][kPathPascalCase];
-    if (devices[device_identifier].services.size() == service_count ||
-        stop_application(executable, gdb, application_identifier,
-                         devices[device_identifier].apps_cache))
-      print(json({{kResponse, "Successfully stopped application"},
-                  {kId, method_id},
-                  {kDeviceId, device_identifier}}));
-    else
-      print_error("Could not stop application", device_identifier, method_id,
-                  kApplicationsCustomError);
-
-    detach_connection(gdb, &devices[device_identifier]);
-  } else {
-    print_error("Lookup applications failed", device_identifier, method_id,
-                kApplicationsCustomError);
-  }
 }
 
 void start_app(std::string device_identifier,
@@ -1483,23 +1502,32 @@ void start_app(std::string device_identifier,
                   kApplicationsCustomError);
       return;
     }
-
-    ServiceInfo gdb = start_debug_server(device_identifier, ddi, method_id);
-    if (!gdb.socket) {
-      return;
-    }
-
-    std::string executable = map[application_identifier][kPathPascalCase] +
-                             "/" +
-                             map[application_identifier]["CFBundleExecutable"];
-    if (run_application(executable, gdb, application_identifier,
-                        &devices[device_identifier], wait_for_debugger))
-      print(json({{kResponse, "Successfully started application"},
+      if(get_product_version(device_identifier) < 17){
+          ServiceInfo gdb = start_debug_server(device_identifier, ddi, method_id);
+          if (!gdb.socket) {
+              return;
+          }
+          
+          std::string executable = map[application_identifier][kPathPascalCase] +
+          "/" +
+          map[application_identifier]["CFBundleExecutable"];
+          if (run_application(executable, gdb, application_identifier,
+                              &devices[device_identifier], wait_for_debugger))
+              print(json({{kResponse, "Successfully started application"},
                   {kId, method_id},
                   {kDeviceId, device_identifier}}));
-    else
-      print_error("Could not start application", device_identifier, method_id,
-                  kApplicationsCustomError);
+          else
+              print_error("Could not start application", device_identifier, method_id,
+                          kApplicationsCustomError);
+      } else {
+          if(devicectl_start_application(application_identifier, device_identifier, wait_for_debugger))
+              print(json({{kResponse, "Successfully started application"},
+                  {kId, method_id},
+                  {kDeviceId, device_identifier}}));
+          else
+              print_error("Could not start application", device_identifier, method_id,
+                          kApplicationsCustomError);
+      }
   } else {
     print_error("Lookup applications failed", device_identifier, method_id,
                 kApplicationsCustomError);
