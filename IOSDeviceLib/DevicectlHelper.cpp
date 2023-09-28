@@ -2,6 +2,8 @@
 #include "FileHelper.h"
 #include "json.hpp"
 #include "CommonFunctions.h"
+#include <fstream>
+#include "Constants.h"
 
 using json = nlohmann::json;
 
@@ -13,16 +15,21 @@ json run_devicectl(std::string command){
     std::string commandWithJson = command + " --quiet --json-output "+outputFile;
     std::string cmdResult = exec(commandWithJson.c_str());
     FileInfo result = get_file_info(outputFile, true);
+    std::remove(outputFile.c_str());
     if(result.size > 0){
         std::string jsonString(result.contents.begin(), result.contents.end());
         json jsonResult = json::parse(jsonString);
         return jsonResult;
     }
-    return json({"error",{"code", -1}});
+    nlohmann::json exception;
+    exception[kError][kCode] = -1;
+    return exception;
 }
 
 bool json_ok(json message){
-    
+    if(message.find(kError) != message.end()){
+        return false;
+    }
     return true;
 }
 bool devicectl_signal_application(int signal, int pid, std::string &device_identifier) {
@@ -31,8 +38,8 @@ bool devicectl_signal_application(int signal, int pid, std::string &device_ident
     
     json result = run_devicectl(command);
     if(!json_ok(result)) {
-        json error = result.value("error", json());
-        int errorValue = error.value("code", -1);
+        json error = result.value(kError, json());
+        int errorValue = error.value(kCode, -1);
         if(errorValue != 3){
             return false;
         }

@@ -6,7 +6,7 @@
 #include "dirent.h"
 #include <array>
 #include <map>
-
+#include <regex>
 
 extern std::map<std::string, DeviceData> devices;
 
@@ -28,11 +28,21 @@ std::string exec(const char *cmd) {
 int get_product_version(std::string &device_identifier){
     std::string product_version =
         get_device_property_value(device_identifier, kProductVersion);
-    std::vector<std::string> product_version_parts = split(product_version, '.');
-    std::string product_major_version = product_version_parts[0];
     return std::stoi(product_version);
 }
 
+int get_xcode_major_version(){
+    std::string cmd_result = exec("xcodebuild -version");
+    if(cmd_result.length()>0){
+        std::regex versionRegex("Xcode (\\d+\\.\\d+\\.\\d+)");
+        std::smatch match;
+        if (std::regex_search(cmd_result, match, versionRegex)) {
+            std::string xcodeVersion = match[1].str();
+            return std::stoi(xcodeVersion);
+        }
+    }
+    return -1;
+}
 
 std::string
 get_developer_disk_image_directory_path(std::string &device_identifier) {

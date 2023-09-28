@@ -25,3 +25,4 @@ CFStringRef create_CFString(const char *str);
 
 int get_product_version(std::string &device_identifier);
 std::string exec(const char *cmd);
+int get_xcode_major_version();

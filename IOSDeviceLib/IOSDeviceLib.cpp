@@ -1428,6 +1428,23 @@ bool validate_device_id_and_attrs(const json &j, std::string method_id,
   return true;
 }
 
+bool check_xcode_major_version(int version, std::string device_identifier, std::string method_id){
+#ifdef _WIN32
+    print_error("Not supported on windows", device_identifier, method_id,
+                kApplicationsCustomError);
+    return false;
+#else
+    if(get_xcode_major_version()>=version){
+        return true;
+    } else {
+        std::string message = "Xcode version of at least " + std::to_string(version) + " is required";
+        print_error(message.c_str(), device_identifier, method_id,
+                    kApplicationsCustomError);
+        return false;
+    }
+#endif
+}
+
 void stop_app(std::string device_identifier, std::string application_identifier,
               std::string ddi, std::string method_id) {
   if (!devices.count(device_identifier)) {
@@ -1465,19 +1482,20 @@ void stop_app(std::string device_identifier, std::string application_identifier,
             
             detach_connection(gdb, &devices[device_identifier]);
         } else {
-            
-            std::string executable = map[application_identifier][kPathPascalCase];
-            std::string CFBundleExecutableString =map[application_identifier]["CFBundleExecutable"];
-            
-            std::string fullPidPath =executable + "/" + CFBundleExecutableString;
-            if(devicectl_stop_application(fullPidPath, device_identifier)){
+            if(check_xcode_major_version(15, device_identifier, method_id)){
+                std::string executable = map[application_identifier][kPathPascalCase];
+                std::string CFBundleExecutableString =map[application_identifier]["CFBundleExecutable"];
                 
-                print(json({{kResponse, "Successfully stopped application"},
-                    {kId, method_id},
-                    {kDeviceId, device_identifier}}));
-            } else {
-                print_error("Could not stop application", device_identifier, method_id,
-                            kApplicationsCustomError);
+                std::string fullPidPath =executable + "/" + CFBundleExecutableString;
+                if(devicectl_stop_application(fullPidPath, device_identifier)){
+                    
+                    print(json({{kResponse, "Successfully stopped application"},
+                        {kId, method_id},
+                        {kDeviceId, device_identifier}}));
+                } else {
+                    print_error("Could not stop application", device_identifier, method_id,
+                                kApplicationsCustomError);
+                }
             }
         }
     } else {
@@ -1520,13 +1538,15 @@ void start_app(std::string device_identifier,
               print_error("Could not start application", device_identifier, method_id,
                           kApplicationsCustomError);
       } else {
-          if(devicectl_start_application(application_identifier, device_identifier, wait_for_debugger))
-              print(json({{kResponse, "Successfully started application"},
-                  {kId, method_id},
-                  {kDeviceId, device_identifier}}));
-          else
-              print_error("Could not start application", device_identifier, method_id,
-                          kApplicationsCustomError);
+          if(check_xcode_major_version(15, device_identifier, method_id)){
+              if(devicectl_start_application(application_identifier, device_identifier, wait_for_debugger))
+                  print(json({{kResponse, "Successfully started application"},
+                      {kId, method_id},
+                      {kDeviceId, device_identifier}}));
+              else
+                  print_error("Could not start application", device_identifier, method_id,
+                              kApplicationsCustomError);
+          }
       }
   } else {
     print_error("Lookup applications failed", device_identifier, method_id,
@@ -1603,6 +1623,7 @@ void connect_to_port(std::string device_identifier, int port,
         [=](SOCKET d_fd) { devices[device_identifier].kill_device_server(); });
   }
 }
+
 
 int main() {
 #ifdef _WIN32
