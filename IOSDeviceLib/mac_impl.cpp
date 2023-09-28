@@ -34,7 +34,7 @@ int get_product_version(std::string &device_identifier){
 int get_xcode_major_version(){
     std::string cmd_result = exec("xcodebuild -version");
     if(cmd_result.length()>0){
-        std::regex versionRegex("Xcode (\\d+\\.\\d+\\.\\d+)");
+        std::regex versionRegex("Xcode (\\d+)");
         std::smatch match;
         if (std::regex_search(cmd_result, match, versionRegex)) {
             std::string xcodeVersion = match[1].str();
