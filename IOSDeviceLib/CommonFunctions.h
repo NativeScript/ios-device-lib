@@ -22,3 +22,7 @@ std::string get_device_property_value(std::string &device_identifier,
 int start_session(std::string &device_identifier);
 void stop_session(std::string &device_identifier);
 CFStringRef create_CFString(const char *str);
+
+int get_product_version(std::string &device_identifier);
+std::string exec(const char *cmd);
+int get_xcode_major_version();

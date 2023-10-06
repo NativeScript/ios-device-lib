@@ -21,6 +21,7 @@
 		709A6CD21E435D11006F76C7 /* Printing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 709A6CCE1E435D11006F76C7 /* Printing.cpp */; };
 		709A6CD31E435D11006F76C7 /* windows_impl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 709A6CD01E435D11006F76C7 /* windows_impl.cpp */; };
 		70DFE7601E72ACCC000317B3 /* ServerHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70DFE75E1E72ACCC000317B3 /* ServerHelper.cpp */; };
+		71538F602AC374AF00AF6E91 /* DevicectlHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71538F5E2AC374AF00AF6E91 /* DevicectlHelper.cpp */; };
 		E0F67C12232591AE00D3E0C2 /* SetTimeout.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E0F67C11232591AE00D3E0C2 /* SetTimeout.cpp */; };
 /* End PBXBuildFile section */
 
@@ -338,6 +339,8 @@
 		70DFE75F1E72ACCC000317B3 /* ServerHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ServerHelper.h; sourceTree = "<group>"; };
 		70F5F4281E13EE02005196BF /* configuration.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = configuration.xcconfig; path = IOSDeviceLib/configuration.xcconfig; sourceTree = "<group>"; };
 		70F6ADAB1DEEB71300DD4722 /* ios-device-lib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "ios-device-lib"; sourceTree = BUILT_PRODUCTS_DIR; };
+		71538F5E2AC374AF00AF6E91 /* DevicectlHelper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DevicectlHelper.cpp; sourceTree = "<group>"; };
+		71538F5F2AC374AF00AF6E91 /* DevicectlHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DevicectlHelper.h; sourceTree = "<group>"; };
 		E0F67C102325919600D3E0C2 /* SetTimeout.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SetTimeout.h; sourceTree = "<group>"; };
 		E0F67C11232591AE00D3E0C2 /* SetTimeout.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SetTimeout.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -384,6 +387,8 @@
 				2E98D5F9251CFE3B00C833E5 /* SocketIncludes.h */,
 				E0F67C102325919600D3E0C2 /* SetTimeout.h */,
 				E0F67C11232591AE00D3E0C2 /* SetTimeout.cpp */,
+				71538F5E2AC374AF00AF6E91 /* DevicectlHelper.cpp */,
+				71538F5F2AC374AF00AF6E91 /* DevicectlHelper.h */,
 			);
 			path = IOSDeviceLib;
 			sourceTree = "<group>";
@@ -1192,6 +1197,7 @@
 				7038CB3E1DEEDB4C00A3D335 /* PlistDate.cpp in Sources */,
 				709A6CD31E435D11006F76C7 /* windows_impl.cpp in Sources */,
 				70DFE7601E72ACCC000317B3 /* ServerHelper.cpp in Sources */,
+				71538F602AC374AF00AF6E91 /* DevicectlHelper.cpp in Sources */,
 				7038CB3D1DEEDB4C00A3D335 /* Plist.cpp in Sources */,
 				709A6CD21E435D11006F76C7 /* Printing.cpp in Sources */,
 				7024956F1E4080B8009A6EBF /* GDBHelper.cpp in Sources */,
