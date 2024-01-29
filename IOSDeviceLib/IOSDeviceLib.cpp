@@ -1581,6 +1581,12 @@ void connect_to_port(std::string device_identifier, int port,
   int usb_result =
       USBMuxConnectByPort(connection_id, htons(port), &device_socket);
 
+  if (usb_result != 0) {
+      print_error("Failed to perform mux connect on device.", device_identifier,
+                  method_id, usb_result);
+      return;
+  }
+    
   if (device_socket < 0) {
     print_error("USBMuxConnectByPort returned bad file descriptor",
                 device_identifier, method_id, usb_result);
