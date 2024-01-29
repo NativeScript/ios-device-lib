@@ -9,6 +9,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <thread>
+#include <utility>
 
 #include "CommonFunctions.h"
 #include "DevicectlHelper.h"
@@ -1623,10 +1624,21 @@ void connect_to_port(std::string device_identifier, int port,
 
     // Proxy the messages from the client socket to the device socket
     // and from the device socket to the client socket.
+    auto on_device_socket_closed = [](SOCKET client_fd) {
+      trace("Device socket has been closed. Closing client socket.");
+      close_socket(client_fd);
+    };
+
+    auto on_client_socket_closed = [=](SOCKET d_fd) {
+      trace("Client socket has been closed. Closing associated device proxy "
+            "server.");
+      devices[device_identifier].kill_device_server();
+    };
+
     proxy_socket_io(
         device_socket, client_socket,
-        [](SOCKET client_fd) { close_socket(client_fd); },
-        [=](SOCKET d_fd) { devices[device_identifier].kill_device_server(); });
+        std::move(on_device_socket_closed),
+        std::move(on_client_socket_closed));
   }
 }
 
