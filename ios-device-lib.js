@@ -128,11 +128,18 @@ class IOSDeviceLib extends EventEmitter {
 				message.error ? reject(message.error) : resolve(message);
 			};
 
+			const targetDeviceIds = this._getTargetDeviceIds(args);
 			deviceLostHandler = (device) => {
+				if (targetDeviceIds.size && !targetDeviceIds.has(device.deviceId)) {
+					return;
+				}
+
 				let message = `Device ${device.deviceId} lost during operation ${methodName} for message ${id}`;
 
 				if (!options.doNotFailOnDeviceLost) {
-					message = { error: new Error(message) };
+					const error = new Error(message);
+					error.deviceId = device.deviceId;
+					message = { error };
 				}
 
 				handleMessage(message);
@@ -169,6 +176,27 @@ class IOSDeviceLib extends EventEmitter {
 
 	_getMessage(id, name, args) {
 		return JSON.stringify({ methods: [{ id: id, name: name, args: args }] }) + '\n';
+	}
+
+	// Device identifiers appear in method args either as bare strings (apps, log,
+	// and the nested array of install/uninstall) or as a deviceId property on an
+	// operation object. Other strings in args (an IPA path, an app id) are
+	// collected too; they can never equal a device identifier, so they cannot
+	// cause a lost-device event to be matched to the wrong operation.
+	_getTargetDeviceIds(args) {
+		const deviceIds = new Set();
+		const collect = (value) => {
+			if (typeof value === "string") {
+				deviceIds.add(value);
+			} else if (Array.isArray(value)) {
+				value.forEach(collect);
+			} else if (value && typeof value === "object" && typeof value.deviceId === "string") {
+				deviceIds.add(value.deviceId);
+			}
+		};
+
+		collect(args);
+		return deviceIds;
 	}
 }
 
