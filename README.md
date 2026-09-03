@@ -37,7 +37,7 @@ The `ios-device-lib` package can be built on either Windows (requires Visual Stu
 
 Releasing
 ==
-Releases are built and published by the `ios-device-lib -> npm` GitHub Actions workflow (`.github/workflows/npm_release.yml`), which compiles the binaries on hosted macOS and Windows runners, packs them together with the JavaScript layer, and publishes to npm with provenance. The manual Xcode/Visual Studio build is only needed for local development.
+Releases are built and published by the `ios-device-lib -> npm` GitHub Actions workflow (`.github/workflows/npm_release.yml`), which compiles the universal macOS binary on a hosted macOS runner, packs it together with the JavaScript layer, and publishes to npm with provenance. The manual Xcode build is only needed for local development. Windows binaries are not currently built: the Windows sources stopped compiling with the iOS 17 changes and need to be repaired before a `windows-latest` job can be added to `build-native.yml`.
 
 * Every push to `master` publishes a rolling prerelease under the `next` dist-tag.
 * To cut a stable release, run the workflow manually (Actions -> `ios-device-lib -> npm` -> Run workflow) and enter a semver keyword (`patch`, `minor`, `major`) or an explicit version (e.g. `0.9.6`). The workflow bumps `package.json`, commits, tags `v<version>`, publishes under `latest` (or the prerelease id's dist-tag for `0.10.0-alpha.1` style versions) and creates a GitHub release with the tarball attached.

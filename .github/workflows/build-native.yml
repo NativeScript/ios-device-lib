@@ -1,9 +1,13 @@
 name: 'Build native binaries'
 
-# Reusable job set: compiles the C++ binary the JavaScript layer spawns, for
-# every platform the package ships, and publishes each as a workflow artifact.
-# Called by the test workflow (to catch native breakage on PRs) and by the
-# release workflow (to assemble the package).
+# Reusable job set: compiles the C++ binary the JavaScript layer spawns and
+# publishes it as a workflow artifact. Called by the test workflow (to catch
+# native breakage on PRs) and by the release workflow (to assemble the package).
+#
+# Only macOS is built. The Windows sources have not compiled since the iOS 17
+# changes (unconditional <dlfcn.h>, dlsym lookup of SSL_free, a MobileDevice
+# entry point declared for macOS only, and winsock.h reaching the compiler
+# before winsock2.h); add a windows-latest job here once they do.
 
 on:
   workflow_call:
@@ -40,42 +44,3 @@ jobs:
           path: bin/darwin/ios-device-lib
           if-no-files-found: error
 
-  win32:
-    name: win32 (${{ matrix.arch }})
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # "platform" is the solution-level name msbuild expects; "arch" is
-          # the directory os.arch() resolves at runtime.
-          - platform: x64
-            arch: x64
-          - platform: x86
-            arch: ia32
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3.0.0
-
-      - name: Build
-        # The project files pin the VS2015 toolset and the 8.1 SDK, neither of
-        # which the hosted runners carry; the overrides select the installed ones.
-        run: >-
-          msbuild IOSDeviceLib.sln /m /nologo /verbosity:minimal
-          /p:Configuration=Release
-          /p:Platform=${{ matrix.platform }}
-          /p:PlatformToolset=v143
-          /p:WindowsTargetPlatformVersion=10.0
-
-      - name: Verify binary
-        shell: bash
-        run: test -s "bin/win32/${{ matrix.arch }}/ios-device-lib.exe"
-
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: bin-win32-${{ matrix.arch }}
-          path: bin/win32/${{ matrix.arch }}/ios-device-lib.exe
-          if-no-files-found: error
