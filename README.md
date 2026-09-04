@@ -42,6 +42,7 @@ Releases are built and published by the `ios-device-lib -> npm` GitHub Actions w
 * Every push to `master` publishes a rolling prerelease under the `next` dist-tag.
 * To cut a stable release, run the workflow manually (Actions -> `ios-device-lib -> npm` -> Run workflow) and enter a semver keyword (`patch`, `minor`, `major`) or an explicit version (e.g. `0.9.6`). The workflow bumps `package.json`, commits, tags `v<version>`, publishes under `latest` (or the prerelease id's dist-tag for `0.10.0-alpha.1` style versions) and creates a GitHub release with the tarball attached.
 * Pushing a `v*` tag by hand also publishes that version.
+* Every push to `master` and every pull request also publishes a preview build to [pkg.pr.new](https://pkg.pr.new); the bot comments the install URL on the pull request (`npm i https://pkg.pr.new/ios-device-lib@<sha>`).
 
 Publishing uses npm trusted publishing (OIDC) from the `npm-publish` environment, so no npm token is stored in the repository. To publish with a granular token instead, set the repository variable `USE_NPM_TOKEN` to `true` and store the token in the `NPM_PUBLISH_TOKEN` secret.
 
