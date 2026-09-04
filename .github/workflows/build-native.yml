@@ -1,0 +1,46 @@
+name: 'Build native binaries'
+
+# Reusable job set: compiles the C++ binary the JavaScript layer spawns and
+# publishes it as a workflow artifact. Called by the test workflow (to catch
+# native breakage on PRs) and by the release workflow (to assemble the package).
+#
+# Only macOS is built. The Windows sources have not compiled since the iOS 17
+# changes (unconditional <dlfcn.h>, dlsym lookup of SSL_free, a MobileDevice
+# entry point declared for macOS only, and winsock.h reaching the compiler
+# before winsock2.h); add a windows-latest job here once they do.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  darwin:
+    name: darwin (x86_64 + arm64)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build
+        run: |
+          xcodebuild -project IOSDeviceLib.xcodeproj -scheme IOSDeviceLib \
+            -configuration Release -quiet \
+            ARCHS="x86_64 arm64" ONLY_ACTIVE_ARCH=NO \
+            DEBUG_INFORMATION_FORMAT=dwarf \
+            build
+
+      - name: Verify universal binary
+        run: |
+          lipo -info bin/darwin/ios-device-lib
+          lipo bin/darwin/ios-device-lib -verify_arch x86_64 arm64
+          codesign --verify --verbose bin/darwin/ios-device-lib
+
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: bin-darwin
+          path: bin/darwin/ios-device-lib
+          if-no-files-found: error
+

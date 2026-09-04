@@ -37,22 +37,14 @@ The `ios-device-lib` package can be built on either Windows (requires Visual Stu
 
 Releasing
 ==
-When you want to release a new version, you should build the binaries for macOS and Windows. To do this, please follow the steps below:
-1. On Windows machine, open IOSDeviceLib.sln file with Visual Studio.
-2. Select Release configuration and x64 architecture.
-3. Build the application.
-4. Now switch the architecture to x86.
-5. Build the application again.
-6. After that open the `<repo dir>\bin\win32` - you will find two dirs there - `ia32` and `x64`.
-7. Open both of the directories and delete all files except the `ios-device-lib.exe` file.
-8. Copy the win32 dir to your Mac machine.
-9. Open the repository on macOS
-10. With Xcode open the `IOSDeviceLib.xcodeproj`
-11. Build the product in Release mode (Cmd + Shift + B on my side).
-12. Open the `<repo dir>/bin/darwin` directory and check if you have `x64` dir there with a single binary file in it.
-13. Inside `<repo dir>/bin/` put the `win32` directory that you've copied from your Windows machine.
-14. At the root of the repository execute `npm pack` - this will produce a new .tgz file.
-15. Publish the `.tgz` file in `npm`.
+Releases are built and published by the `ios-device-lib -> npm` GitHub Actions workflow (`.github/workflows/npm_release.yml`), which compiles the universal macOS binary on a hosted macOS runner, packs it together with the JavaScript layer, and publishes to npm with provenance. The manual Xcode build is only needed for local development. Windows binaries are not currently built: the Windows sources stopped compiling with the iOS 17 changes and need to be repaired before a `windows-latest` job can be added to `build-native.yml`.
+
+* Every push to `master` publishes a rolling prerelease under the `next` dist-tag.
+* To cut a stable release, run the workflow manually (Actions -> `ios-device-lib -> npm` -> Run workflow) and enter a semver keyword (`patch`, `minor`, `major`) or an explicit version (e.g. `0.9.6`). The workflow bumps `package.json`, commits, tags `v<version>`, publishes under `latest` (or the prerelease id's dist-tag for `0.10.0-alpha.1` style versions) and creates a GitHub release with the tarball attached.
+* Pushing a `v*` tag by hand also publishes that version.
+* Every push to `master` and every pull request also publishes a preview build to [pkg.pr.new](https://pkg.pr.new); the bot comments the install URL on the pull request (`npm i https://pkg.pr.new/ios-device-lib@<sha>`).
+
+Publishing uses npm trusted publishing (OIDC) from the `npm-publish` environment, so no npm token is stored in the repository. To publish with a granular token instead, set the repository variable `USE_NPM_TOKEN` to `true` and store the token in the `NPM_PUBLISH_TOKEN` secret.
 
 Inter-process Communication
 ==
