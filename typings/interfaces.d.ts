@@ -75,6 +75,13 @@ declare global {
 			response: string;
 		}
 
+		interface IStartApplicationResponse extends IDeviceResponse {
+			/**
+			 * Process id of the started application, on devices running iOS 17 or later.
+			 */
+			pid?: number;
+		}
+
 		interface IDeviceMultipleResponse extends IDeviceId {
 			response: string[];
 		}
@@ -179,7 +186,7 @@ declare global {
 			postNotification(postNotificationArray: IPostNotificationData[]): Promise<IDeviceResponse>[];
 			awaitNotificationResponse(awaitNotificationResponseArray: IAwaitNotificatioNResponseData[]): Promise<IDeviceResponse>[];
 			apps(deviceIdentifiers: string[]): Promise<IDeviceAppInfo>[];
-			start(startArray: IIOSApplicationData[]): Promise<IDeviceResponse>[];
+			start(startArray: IIOSApplicationData[]): Promise<IStartApplicationResponse>[];
 			stop(stopArray: IIOSApplicationData[]): Promise<IDeviceResponse>[];
 			startDeviceLog(deviceIdentifiers: string[]): void;
 			startDeviceLogStream(logStreamArray: IDeviceLogStreamData[]): void;

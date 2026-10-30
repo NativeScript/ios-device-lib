@@ -1748,8 +1748,10 @@ void start_app(std::string device_identifier,
                           kApplicationsCustomError);
       } else {
           if(check_xcode_major_version(15, device_identifier, method_id)){
-              if(devicectl_start_application(application_identifier, device_identifier, wait_for_debugger))
+              int pid = -1;
+              if(devicectl_start_application(application_identifier, device_identifier, wait_for_debugger, pid))
                   print(json({{kResponse, "Successfully started application"},
+                      {kPid, pid},
                       {kId, method_id},
                       {kDeviceId, device_identifier}}));
               else
