@@ -134,5 +134,24 @@ describe("ios-device-lib", () => {
 			assert.equal(handler.listenerCount(Constants.DeviceLostEventName), 0);
 			assert.equal(handler.listenerCount(Constants.DataEventName), 0);
 		});
+
+		it("emits structured log stream entries as deviceLogEntry, not deviceLogData", () => {
+			const lib = createLib();
+			const entries = [];
+			const legacy = [];
+			lib.on("deviceLogEntry", (data) => entries.push(data));
+			lib.on("deviceLogData", (data) => legacy.push(data));
+
+			lib.startDeviceLogStream([{ deviceId: deviceA, processName: "app" }]);
+			const request = lib._iosDeviceLibStdioHandler.written[0].methods[0];
+			assert.equal(request.name, "logStream");
+			assert.deepEqual(request.args, [{ deviceId: deviceA, processName: "app" }]);
+
+			const entry = { pid: 1, message: "CONSOLE LOG: hi" };
+			lib._iosDeviceLibStdioHandler.emit(Constants.DataEventName, { id: lastMessageId(lib), deviceId: deviceA, entry });
+
+			assert.deepEqual(entries, [{ deviceId: deviceA, entry }]);
+			assert.deepEqual(legacy, []);
+		});
 	});
 });
