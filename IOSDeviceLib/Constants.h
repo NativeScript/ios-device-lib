@@ -40,6 +40,7 @@ static const char *kInstallationProxy = "com.apple.mobile.installation_proxy";
 static const char *kHouseArrest = "com.apple.mobile.house_arrest";
 static const char *kNotificationProxy = "com.apple.mobile.notification_proxy";
 static const char *kSyslog = "com.apple.syslog_relay";
+static const char *kOsTraceRelay = "com.apple.os_trace_relay";
 static const char *kMobileImageMounter =
     "com.apple.mobile.mobile_image_mounter";
 static const char *kDebugServer = "com.apple.debugserver";

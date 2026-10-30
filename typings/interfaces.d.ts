@@ -96,6 +96,40 @@ declare global {
 		interface IDeviceLogData extends IDeviceId, IMessage {
 		}
 
+		interface IDeviceLogStreamData extends IDeviceId {
+			/**
+			 * Only entries logged by a process whose executable has this name are streamed.
+			 * All processes when omitted.
+			 */
+			processName?: string;
+		}
+
+		interface IDeviceLogEntry {
+			pid: number;
+			thread: number;
+			/**
+			 * Milliseconds since the epoch.
+			 */
+			timestamp: number;
+			level: "notice" | "info" | "debug" | "userAction" | "error" | "fault" | "unknown";
+			/**
+			 * Path of the process' executable.
+			 */
+			process: string;
+			/**
+			 * Path of the binary (executable, framework or library) that logged the entry.
+			 */
+			image: string;
+			message: string;
+			subsystem?: string;
+			category?: string;
+		}
+
+		interface IDeviceLogEntryData extends IDeviceId {
+			entry?: IDeviceLogEntry;
+			error?: IDeviceError;
+		}
+
 		interface IDeviceApplication {
 			CFBundleExecutable: string;
 			Path: string;
@@ -148,9 +182,11 @@ declare global {
 			start(startArray: IIOSApplicationData[]): Promise<IDeviceResponse>[];
 			stop(stopArray: IIOSApplicationData[]): Promise<IDeviceResponse>[];
 			startDeviceLog(deviceIdentifiers: string[]): void;
+			startDeviceLogStream(logStreamArray: IDeviceLogStreamData[]): void;
 			connectToPort(connectToPortArray: IConnectToPortData[]): Promise<IConnectToPortResponse>[];
 			dispose(signal?: string): void;
 			on(event: "deviceLogData", listener: (response: IDeviceLogData) => void): this;
+			on(event: "deviceLogEntry", listener: (response: IDeviceLogEntryData) => void): this;
 		}
 
 		type SocketMessageHandler = (message: ISocketMessage) => void;

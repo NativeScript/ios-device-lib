@@ -10,6 +10,7 @@ const MethodNames = {
 	uninstall: "uninstall",
 	list: "list",
 	log: "log",
+	logStream: "logStream",
 	upload: "upload",
 	download: "download",
 	read: "read",
@@ -23,7 +24,8 @@ const MethodNames = {
 };
 
 const Events = {
-	deviceLogData: "deviceLogData"
+	deviceLogData: "deviceLogData",
+	deviceLogEntry: "deviceLogEntry"
 };
 
 class IOSDeviceLib extends EventEmitter {
@@ -87,6 +89,14 @@ class IOSDeviceLib extends EventEmitter {
 
 	startDeviceLog(deviceIdentifiers) {
 		this._getPromise(MethodNames.log, deviceIdentifiers, { shouldEmit: true, disregardTimeout: true, doNotFailOnDeviceLost: true });
+	}
+
+	/**
+	 * Streams structured os_log entries (com.apple.os_trace_relay). Each entry, or an
+	 * error when the stream cannot be started, is emitted as a "deviceLogEntry" event.
+	 */
+	startDeviceLogStream(logStreamArray) {
+		this._getPromise(MethodNames.logStream, logStreamArray, { shouldEmit: true, emitEventName: Events.deviceLogEntry, disregardTimeout: true, doNotFailOnDeviceLost: true });
 	}
 
 	connectToPort(connectToPortArray) {
@@ -153,7 +163,7 @@ class IOSDeviceLib extends EventEmitter {
 
 					delete message.id;
 					if (options && options.shouldEmit) {
-						this.emit(Events.deviceLogData, message);
+						this.emit(options.emitEventName || Events.deviceLogData, message);
 					} else {
 						handleMessage(message);
 					}

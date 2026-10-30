@@ -1302,6 +1302,215 @@ void device_log(std::string device_identifier, std::string method_id) {
   delete[] buffer;
 }
 
+#ifndef _WIN32
+// AMDServiceConnectionReceive may return fewer bytes than requested.
+bool receive_exact(ServiceConnRef connection, char *buffer, size_t size) {
+  size_t received = 0;
+  while (received < size) {
+    int bytes_read =
+        AMDServiceConnectionReceive(connection, buffer + received, size - received);
+    if (bytes_read <= 0) {
+      return false;
+    }
+    received += bytes_read;
+  }
+  return true;
+}
+
+template <typename T> T read_le(const std::vector<char> &data, size_t offset) {
+  T value;
+  memcpy(&value, data.data() + offset, sizeof(T));
+  return value;
+}
+
+const char *os_trace_level_name(uint8_t level) {
+  switch (level) {
+  case 0x00:
+    return "notice";
+  case 0x01:
+    return "info";
+  case 0x02:
+    return "debug";
+  case 0x03:
+    return "userAction";
+  case 0x10:
+    return "error";
+  case 0x11:
+    return "fault";
+  default:
+    return "unknown";
+  }
+}
+
+// Record layout of com.apple.os_trace_relay activity stream entries, as
+// documented by pymobiledevice3 (services/os_trace.py): a fixed header, then
+// the NUL-terminated process path, then the sender image path, message,
+// subsystem and category, sized by header fields that include their NUL.
+const size_t kOsTraceHeaderSize = 129;
+
+bool parse_os_trace_entry(const std::vector<char> &data, json &entry) {
+  if (data.size() < kOsTraceHeaderSize) {
+    return false;
+  }
+
+  uint32_t seconds = read_le<uint32_t>(data, 55);
+  uint32_t microseconds = read_le<uint32_t>(data, 63);
+  uint16_t image_size = read_le<uint16_t>(data, 107);
+  uint16_t message_size = read_le<uint16_t>(data, 109);
+  uint32_t subsystem_size = read_le<uint32_t>(data, 117);
+  uint32_t category_size = read_le<uint32_t>(data, 121);
+
+  size_t offset = kOsTraceHeaderSize;
+  auto process_end = std::find(data.begin() + offset, data.end(), '\0');
+  if (process_end == data.end()) {
+    return false;
+  }
+  std::string process(data.begin() + offset, process_end);
+  offset = process_end - data.begin() + 1;
+
+  auto take = [&](size_t size, std::string &out) {
+    if (size == 0) {
+      return true;
+    }
+    if (offset + size > data.size()) {
+      return false;
+    }
+    out.assign(data.data() + offset, size - 1);
+    offset += size;
+    return true;
+  };
+
+  std::string image, message, subsystem, category;
+  if (!take(image_size, image) || !take(message_size, message) ||
+      !take(subsystem_size, subsystem) || !take(category_size, category)) {
+    return false;
+  }
+
+  entry["pid"] = read_le<uint32_t>(data, 9);
+  entry["thread"] = read_le<uint64_t>(data, 83);
+  entry["timestamp"] = seconds * 1000.0 + microseconds / 1000.0;
+  entry["level"] = os_trace_level_name((uint8_t)data[68]);
+  entry["process"] = process;
+  entry["image"] = image;
+  entry["message"] = message;
+  if (!subsystem.empty()) {
+    entry["subsystem"] = subsystem;
+  }
+  if (!category.empty()) {
+    entry["category"] = category;
+  }
+  return true;
+}
+
+std::string path_basename(const std::string &path) {
+  size_t slash = path.find_last_of('/');
+  return slash == std::string::npos ? path : path.substr(slash + 1);
+}
+
+// Structured logs from com.apple.os_trace_relay. Only entries whose process
+// executable is named process_name are printed (all of them when it is
+// empty), matched by name so the stream follows the app across relaunches.
+void device_log_stream(std::string device_identifier, std::string process_name,
+                       std::string method_id) {
+  ServiceInfo serviceInfo = start_secure_service(device_identifier, kOsTraceRelay,
+                                                 method_id, true, true);
+  if (!serviceInfo.socket) {
+    return;
+  }
+
+  int pid = -1;
+  int message_filter = 0xFFFF;
+  // Payload | historical | callstack | debug, as Console.app requests.
+  int stream_flags = 0x3C;
+  CFStringRef keys[] = {create_CFString("Request"), create_CFString("Pid"),
+                        create_CFString("MessageFilter"),
+                        create_CFString("StreamFlags")};
+  CFTypeRef values[] = {
+      create_CFString("StartActivity"),
+      CFNumberCreate(NULL, kCFNumberIntType, &pid),
+      CFNumberCreate(NULL, kCFNumberIntType, &message_filter),
+      CFNumberCreate(NULL, kCFNumberIntType, &stream_flags)};
+  CFDictionaryRef request = CFDictionaryCreate(
+      NULL, (const void **)keys, (const void **)values, 4,
+      &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+  long send_result = send_con_message(serviceInfo.connection, request);
+  CFRelease(request);
+  for (int i = 0; i < 4; i++) {
+    CFRelease(keys[i]);
+    CFRelease(values[i]);
+  }
+  if (send_result) {
+    print_error("Could not start the os_trace_relay activity stream",
+                device_identifier, method_id, (int)send_result);
+    return;
+  }
+
+  // The reply is a little-endian length of the length, the length itself,
+  // then a plist with the request status.
+  uint32_t length_size = 0;
+  std::vector<char> length_bytes;
+  std::vector<char> reply;
+  bool reply_ok =
+      receive_exact(serviceInfo.connection, (char *)&length_size, 4) &&
+      length_size > 0 && length_size <= 8;
+  uint64_t reply_size = 0;
+  if (reply_ok) {
+    length_bytes.resize(length_size);
+    reply_ok = receive_exact(serviceInfo.connection, length_bytes.data(),
+                             length_size);
+    memcpy(&reply_size, length_bytes.data(), length_size);
+  }
+  if (reply_ok && reply_size > 0 && reply_size < (1 << 20)) {
+    reply.resize(reply_size);
+    reply_ok =
+        receive_exact(serviceInfo.connection, reply.data(), reply_size);
+  } else {
+    reply_ok = false;
+  }
+
+  std::map<std::string, boost::any> reply_dict;
+  if (reply_ok) {
+    Plist::readPlist(reply.data(), reply.size(), reply_dict);
+  }
+  if (!reply_ok || !reply_dict.count("Status") ||
+      boost::any_cast<std::string>(reply_dict["Status"]) !=
+          "RequestSuccessful") {
+    print_error("The device refused the os_trace_relay activity stream",
+                device_identifier, method_id, kAMDAPIInternalError);
+    return;
+  }
+
+  std::vector<char> record;
+  while (true) {
+    char marker = 0;
+    uint32_t record_size = 0;
+    if (!receive_exact(serviceInfo.connection, &marker, 1) || marker != 0x02 ||
+        !receive_exact(serviceInfo.connection, (char *)&record_size, 4)) {
+      break;
+    }
+    record.resize(record_size);
+    if (!receive_exact(serviceInfo.connection, record.data(), record_size)) {
+      break;
+    }
+
+    json entry;
+    if (!parse_os_trace_entry(record, entry)) {
+      continue;
+    }
+    if (!process_name.empty() &&
+        path_basename(entry["process"].get<std::string>()) != process_name) {
+      continue;
+    }
+
+    json message;
+    message[kDeviceId] = device_identifier;
+    message["entry"] = entry;
+    message[kId] = method_id;
+    print(message);
+  }
+}
+#endif
+
 void post_notification(std::string device_identifier,
                        PostNotificationInfo post_notification_info,
                        std::string method_id) {
@@ -1731,6 +1940,22 @@ int main() {
           std::string device_identifier =
               device_identifier_json.get<std::string>();
           perform_detached_operation(device_log, device_identifier, method_id);
+        }
+      } else if (method_name == "logStream") {
+        for (json &arg : method_args) {
+          if (!validate_device_id_and_attrs(arg, method_id, {}))
+            continue;
+
+          std::string device_identifier = arg.value(kDeviceId, "");
+#ifdef _WIN32
+          print_error("Structured device logs are not supported on Windows",
+                      device_identifier, method_id, kAMDAPIInternalError);
+#else
+          std::string process_name = arg.value("processName", "");
+          std::thread([=]() {
+            device_log_stream(device_identifier, process_name, method_id);
+          }).detach();
+#endif
         }
       } else if (method_name == "postNotification") {
         for (json &arg : method_args) {
