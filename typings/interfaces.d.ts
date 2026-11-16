@@ -106,6 +106,9 @@ declare global {
 
 		interface IDeviceLogEntry {
 			pid: number;
+			/**
+			 * Best effort: read from an undocumented header offset that was only verified on iPadOS 26.
+			 */
 			thread: number;
 			/**
 			 * Milliseconds since the epoch.
@@ -127,6 +130,9 @@ declare global {
 
 		interface IDeviceLogEntryData extends IDeviceId {
 			entry?: IDeviceLogEntry;
+			/**
+			 * Set when the stream could not start or has stopped. No more entries follow for the device.
+			 */
 			error?: IDeviceError;
 		}
 

@@ -92,11 +92,15 @@ class IOSDeviceLib extends EventEmitter {
 	}
 
 	/**
-	 * Streams structured os_log entries (com.apple.os_trace_relay). Each entry, or an
-	 * error when the stream cannot be started, is emitted as a "deviceLogEntry" event.
+	 * Streams structured os_log entries (com.apple.os_trace_relay). Each entry is emitted
+	 * as a "deviceLogEntry" event. So is an error, when the stream cannot be started or
+	 * stops, after which nothing more is emitted for that device.
 	 */
 	startDeviceLogStream(logStreamArray) {
-		this._getPromise(MethodNames.logStream, logStreamArray, { shouldEmit: true, emitEventName: Events.deviceLogEntry, disregardTimeout: true, doNotFailOnDeviceLost: true });
+		// One request per device, so losing one device does not stop the others' streams.
+		logStreamArray.forEach(logStream => {
+			this._getPromise(MethodNames.logStream, [logStream], { shouldEmit: true, emitEventName: Events.deviceLogEntry, disregardTimeout: true, doNotFailOnDeviceLost: true, stopOnError: true });
+		});
 	}
 
 	connectToPort(connectToPortArray) {
@@ -163,6 +167,9 @@ class IOSDeviceLib extends EventEmitter {
 
 					delete message.id;
 					if (options && options.shouldEmit) {
+						if (options.stopOnError && message.error) {
+							removeListeners();
+						}
 						this.emit(options.emitEventName || Events.deviceLogData, message);
 					} else {
 						handleMessage(message);

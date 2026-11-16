@@ -153,5 +153,40 @@ describe("ios-device-lib", () => {
 			assert.deepEqual(entries, [{ deviceId: deviceA, entry }]);
 			assert.deepEqual(legacy, []);
 		});
+
+		it("streams each device with its own request, so losing one device leaves the others streaming", () => {
+			const lib = createLib();
+			const entries = [];
+			lib.on("deviceLogEntry", (data) => entries.push(data));
+
+			lib.startDeviceLogStream([{ deviceId: deviceA, processName: "app" }, { deviceId: deviceB, processName: "app" }]);
+			const written = lib._iosDeviceLibStdioHandler.written;
+			assert.equal(written.length, 2);
+			const [idA, idB] = written.map((request) => request.methods[0].id);
+			assert.deepEqual(written[1].methods[0].args, [{ deviceId: deviceB, processName: "app" }]);
+
+			emitDeviceLost(lib, deviceA);
+			const entry = { pid: 1, message: "CONSOLE LOG: hi" };
+			emitResponse(lib, idA, { deviceId: deviceA, entry });
+			emitResponse(lib, idB, { deviceId: deviceB, entry });
+
+			assert.deepEqual(entries, [{ deviceId: deviceB, entry }]);
+		});
+
+		it("emits a stream error once and then stops listening for that stream", () => {
+			const lib = createLib();
+			const entries = [];
+			lib.on("deviceLogEntry", (data) => entries.push(data));
+
+			lib.startDeviceLogStream([{ deviceId: deviceA, processName: "app" }]);
+			const id = lastMessageId(lib);
+			const error = { message: "The os_trace_relay activity stream ended", code: 1, deviceId: deviceA };
+			emitResponse(lib, id, { deviceId: deviceA, error });
+			emitResponse(lib, id, { deviceId: deviceA, entry: { pid: 1, message: "late" } });
+
+			assert.deepEqual(entries, [{ deviceId: deviceA, error }]);
+			assert.equal(lib._iosDeviceLibStdioHandler.listenerCount(Constants.DataEventName), 0);
+			assert.equal(lib._iosDeviceLibStdioHandler.listenerCount(Constants.DeviceLostEventName), 0);
+		});
 	});
 });

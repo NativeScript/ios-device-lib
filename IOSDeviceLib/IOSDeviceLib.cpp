@@ -1307,8 +1307,8 @@ void device_log(std::string device_identifier, std::string method_id) {
 bool receive_exact(ServiceConnRef connection, char *buffer, size_t size) {
   size_t received = 0;
   while (received < size) {
-    int bytes_read =
-        AMDServiceConnectionReceive(connection, buffer + received, size - received);
+    int bytes_read = AMDServiceConnectionReceive(connection, buffer + received,
+                                                 size - received);
     if (bytes_read <= 0) {
       return false;
     }
@@ -1407,17 +1407,15 @@ std::string path_basename(const std::string &path) {
   return slash == std::string::npos ? path : path.substr(slash + 1);
 }
 
-// Structured logs from com.apple.os_trace_relay. Only entries whose process
-// executable is named process_name are printed (all of them when it is
-// empty), matched by name so the stream follows the app across relaunches.
-void device_log_stream(std::string device_identifier, std::string process_name,
-                       std::string method_id) {
-  ServiceInfo serviceInfo = start_secure_service(device_identifier, kOsTraceRelay,
-                                                 method_id, true, true);
-  if (!serviceInfo.socket) {
-    return;
-  }
+// Larger than any os_log record; a bigger size means the stream is out of step.
+const uint32_t kMaxOsTraceRecordSize = 1 << 20;
 
+// Prints the entries of an os_trace_relay activity stream until it stops, and
+// returns why it stopped.
+const char *stream_os_trace_entries(ServiceConnRef connection,
+                                    const std::string &device_identifier,
+                                    const std::string &process_name,
+                                    const std::string &method_id) {
   int pid = -1;
   int message_filter = 0xFFFF;
   // Payload | historical | callstack | debug, as Console.app requests.
@@ -1425,24 +1423,21 @@ void device_log_stream(std::string device_identifier, std::string process_name,
   CFStringRef keys[] = {create_CFString("Request"), create_CFString("Pid"),
                         create_CFString("MessageFilter"),
                         create_CFString("StreamFlags")};
-  CFTypeRef values[] = {
-      create_CFString("StartActivity"),
-      CFNumberCreate(NULL, kCFNumberIntType, &pid),
-      CFNumberCreate(NULL, kCFNumberIntType, &message_filter),
-      CFNumberCreate(NULL, kCFNumberIntType, &stream_flags)};
+  CFTypeRef values[] = {create_CFString("StartActivity"),
+                        CFNumberCreate(NULL, kCFNumberIntType, &pid),
+                        CFNumberCreate(NULL, kCFNumberIntType, &message_filter),
+                        CFNumberCreate(NULL, kCFNumberIntType, &stream_flags)};
   CFDictionaryRef request = CFDictionaryCreate(
       NULL, (const void **)keys, (const void **)values, 4,
       &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-  long send_result = send_con_message(serviceInfo.connection, request);
+  long send_result = send_con_message(connection, request);
   CFRelease(request);
   for (int i = 0; i < 4; i++) {
     CFRelease(keys[i]);
     CFRelease(values[i]);
   }
   if (send_result) {
-    print_error("Could not start the os_trace_relay activity stream",
-                device_identifier, method_id, (int)send_result);
-    return;
+    return "Could not start the os_trace_relay activity stream";
   }
 
   // The reply is a little-endian length of the length, the length itself,
@@ -1450,20 +1445,17 @@ void device_log_stream(std::string device_identifier, std::string process_name,
   uint32_t length_size = 0;
   std::vector<char> length_bytes;
   std::vector<char> reply;
-  bool reply_ok =
-      receive_exact(serviceInfo.connection, (char *)&length_size, 4) &&
-      length_size > 0 && length_size <= 8;
+  bool reply_ok = receive_exact(connection, (char *)&length_size, 4) &&
+                  length_size > 0 && length_size <= 8;
   uint64_t reply_size = 0;
   if (reply_ok) {
     length_bytes.resize(length_size);
-    reply_ok = receive_exact(serviceInfo.connection, length_bytes.data(),
-                             length_size);
+    reply_ok = receive_exact(connection, length_bytes.data(), length_size);
     memcpy(&reply_size, length_bytes.data(), length_size);
   }
   if (reply_ok && reply_size > 0 && reply_size < (1 << 20)) {
     reply.resize(reply_size);
-    reply_ok =
-        receive_exact(serviceInfo.connection, reply.data(), reply_size);
+    reply_ok = receive_exact(connection, reply.data(), reply_size);
   } else {
     reply_ok = false;
   }
@@ -1472,24 +1464,25 @@ void device_log_stream(std::string device_identifier, std::string process_name,
   if (reply_ok) {
     Plist::readPlist(reply.data(), reply.size(), reply_dict);
   }
-  if (!reply_ok || !reply_dict.count("Status") ||
-      boost::any_cast<std::string>(reply_dict["Status"]) !=
-          "RequestSuccessful") {
-    print_error("The device refused the os_trace_relay activity stream",
-                device_identifier, method_id, kAMDAPIInternalError);
-    return;
+  const std::string *status =
+      reply_dict.count("Status")
+          ? boost::any_cast<std::string>(&reply_dict["Status"])
+          : nullptr;
+  if (!status || *status != "RequestSuccessful") {
+    return "The device refused the os_trace_relay activity stream";
   }
 
   std::vector<char> record;
   while (true) {
     char marker = 0;
     uint32_t record_size = 0;
-    if (!receive_exact(serviceInfo.connection, &marker, 1) || marker != 0x02 ||
-        !receive_exact(serviceInfo.connection, (char *)&record_size, 4)) {
+    if (!receive_exact(connection, &marker, 1) || marker != 0x02 ||
+        !receive_exact(connection, (char *)&record_size, 4) ||
+        record_size > kMaxOsTraceRecordSize) {
       break;
     }
     record.resize(record_size);
-    if (!receive_exact(serviceInfo.connection, record.data(), record_size)) {
+    if (!receive_exact(connection, record.data(), record_size)) {
       break;
     }
 
@@ -1508,6 +1501,38 @@ void device_log_stream(std::string device_identifier, std::string process_name,
     message[kId] = method_id;
     print(message);
   }
+
+  return "The os_trace_relay activity stream ended";
+}
+
+// Structured logs from com.apple.os_trace_relay. Only entries whose process
+// executable is named process_name are printed (all of them when it is
+// empty), matched by name so the stream follows the app across relaunches.
+// The stream never ends normally, so its end is always reported as an error.
+void device_log_stream(std::string device_identifier, std::string process_name,
+                       std::string method_id) {
+  ServiceInfo serviceInfo = start_secure_service(
+      device_identifier, kOsTraceRelay, method_id, true, true);
+  if (!serviceInfo.socket) {
+    return;
+  }
+
+  // This runs on a detached thread, where an uncaught exception would
+  // terminate the whole process.
+  const char *reason;
+  try {
+    reason = stream_os_trace_entries(serviceInfo.connection, device_identifier,
+                                     process_name, method_id);
+  } catch (...) {
+    reason = "The os_trace_relay activity stream failed";
+  }
+
+  start_service_mutex.lock();
+  serviceConnections.erase(serviceInfo.connection_id);
+  start_service_mutex.unlock();
+  AMDServiceConnectionInvalidate(serviceInfo.connection);
+
+  print_error(reason, device_identifier, method_id, kAMDAPIInternalError);
 }
 #endif
 
