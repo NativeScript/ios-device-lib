@@ -8,11 +8,12 @@
 using json = nlohmann::json;
 
 
-json run_devicectl(std::string command){
+json run_devicectl(std::string command, std::string app_arguments = ""){
     char templatea[] = "/tmp/mytempfile-XXXXXX";
     char* tempFileDir = mkdtemp(templatea);
     std::string outputFile = std::string(tempFileDir) + "tempFileName";
-    std::string commandWithJson = command + " --quiet --json-output "+outputFile;
+    // devicectl hands everything after "--" to the launched app.
+    std::string commandWithJson = command + " --quiet --json-output " + outputFile + (app_arguments.empty() ? "" : " -- " + app_arguments);
     std::string cmdResult = exec(commandWithJson.c_str());
     FileInfo result = get_file_info(outputFile, true);
     std::remove(outputFile.c_str());
@@ -66,12 +67,13 @@ bool devicectl_stop_application(std::string &executable, std::string &device_ide
 }
 
 
-bool devicectl_start_application(std::string &bundle_id, std::string &device_identifier, bool wait_for_debugger) {
+bool devicectl_start_application(std::string &bundle_id, std::string &device_identifier, bool wait_for_debugger, int &pid) {
     
-    std::string command = "xcrun devicectl device process launch --device " + device_identifier + " --terminate-existing " + bundle_id + (wait_for_debugger?" --start-stopped":"");
+    std::string command = "xcrun devicectl device process launch --device " + device_identifier + " --terminate-existing " + bundle_id;
      
-    json result = run_devicectl(command);
+    json result = run_devicectl(command, wait_for_debugger ? "--nativescript-debug-brk" : "");
     if(json_ok(result)){
+        pid = result.value("result", json()).value("process", json()).value("processIdentifier", -1);
         return true;
     }
     return false;

@@ -76,6 +76,7 @@ static const char *kCurrentApplicationsKey = "CurrentList";
 static const char *kCommandKey = "Command";
 static const char *kStatusKey = "Status";
 static const char *kResponse = "response";
+static const char *kPid = "pid";
 static const char *kSocket = "socket";
 static const char *kMessage = "message";
 static const char *kResponseCommandType = "responseCommandType";
