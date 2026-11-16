@@ -10,6 +10,7 @@ const MethodNames = {
 	uninstall: "uninstall",
 	list: "list",
 	log: "log",
+	logStream: "logStream",
 	upload: "upload",
 	download: "download",
 	read: "read",
@@ -23,7 +24,8 @@ const MethodNames = {
 };
 
 const Events = {
-	deviceLogData: "deviceLogData"
+	deviceLogData: "deviceLogData",
+	deviceLogEntry: "deviceLogEntry"
 };
 
 class IOSDeviceLib extends EventEmitter {
@@ -87,6 +89,18 @@ class IOSDeviceLib extends EventEmitter {
 
 	startDeviceLog(deviceIdentifiers) {
 		this._getPromise(MethodNames.log, deviceIdentifiers, { shouldEmit: true, disregardTimeout: true, doNotFailOnDeviceLost: true });
+	}
+
+	/**
+	 * Streams structured os_log entries (com.apple.os_trace_relay). Each entry is emitted
+	 * as a "deviceLogEntry" event. So is an error, when the stream cannot be started or
+	 * stops, after which nothing more is emitted for that device.
+	 */
+	startDeviceLogStream(logStreamArray) {
+		// One request per device, so losing one device does not stop the others' streams.
+		logStreamArray.forEach(logStream => {
+			this._getPromise(MethodNames.logStream, [logStream], { shouldEmit: true, emitEventName: Events.deviceLogEntry, disregardTimeout: true, doNotFailOnDeviceLost: true, stopOnError: true });
+		});
 	}
 
 	connectToPort(connectToPortArray) {
@@ -153,7 +167,10 @@ class IOSDeviceLib extends EventEmitter {
 
 					delete message.id;
 					if (options && options.shouldEmit) {
-						this.emit(Events.deviceLogData, message);
+						if (options.stopOnError && message.error) {
+							removeListeners();
+						}
+						this.emit(options.emitEventName || Events.deviceLogData, message);
 					} else {
 						handleMessage(message);
 					}
